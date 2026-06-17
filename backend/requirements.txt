@@ -1,0 +1,38 @@
+# PersonaOS — AI Influencer Operating System
+# ==========================================
+
+# ── Core Framework ───────────────────────────────────────────────
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# ── Database ─────────────────────────────────────────────────────
+sqlalchemy[asyncio]>=2.0.30
+aiosqlite>=0.20.0
+alembic>=1.13.0
+
+# ── AI / LLM ────────────────────────────────────────────────────
+openai>=1.30.0
+
+# ── Vector Database (Memory Engine) ─────────────────────────────
+chromadb>=0.5.0
+
+# ── Media Processing (Content Engine) ───────────────────────────
+# Uncomment when implementing image/video generation
+# pillow>=10.0.0
+# opencv-python>=4.9.0
+
+# ── Social Media APIs ───────────────────────────────────────────
+# Uncomment when implementing Publishing Engine
+# tweepy>=4.14.0          # X (Twitter)
+# instagrapi>=2.0.0       # Instagram (unofficial)
+
+# ── HTTP Client ──────────────────────────────────────────────────
+httpx>=0.27.0
+
+# ── Scheduling ───────────────────────────────────────────────────
+# apscheduler>=3.10.0     # For content scheduling
+
+# ── Dev Tools ────────────────────────────────────────────────────
+python-dotenv>=1.0.0

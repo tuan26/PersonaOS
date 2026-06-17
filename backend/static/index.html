@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PersonaOS — AI Influencer OS</title>
+<style>
+:root{
+--bg:#08080f;--surface:#12121f;--surface2:#1a1a2e;--border:#2a2a3e;
+--text:#e8e8f0;--text2:#9898b0;--primary:#a78bfa;--primary2:#7c3aed;
+--accent:#06b6d4;--accent2:#0891b2;--pink:#ec4899;--green:#10b981;
+--orange:#f59e0b;--red:#ef4444;--star:#fbbf24;
+--grad1:linear-gradient(135deg,#a78bfa,#ec4899);
+--grad2:linear-gradient(135deg,#06b6d4,#a78bfa);
+--rad:14px;--rad-sm:8px;--tr:.25s ease;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;z-index:-1;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(120,60,220,.12),transparent),radial-gradient(ellipse 60% 50% at 80% 80%,rgba(6,182,212,.08),transparent)}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--surface)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.container{max-width:1280px;margin:0 auto;padding:0 20px}
+
+.hdr{position:sticky;top:0;z-index:100;background:rgba(8,8,15,.88);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:14px 0}
+.hdr .container{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;font-size:1.3rem;font-weight:800}
+.logo-icon{width:38px;height:38px;border-radius:12px;background:var(--grad1);display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.badge{font-size:.7rem;padding:3px 10px;border-radius:20px;background:rgba(167,139,250,.15);color:var(--primary);border:1px solid rgba(167,139,250,.25);font-weight:600}
+
+.hero{text-align:center;padding:48px 0 36px}
+.hero h1{font-size:2.6rem;font-weight:900;letter-spacing:-.02em;background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px}
+.hero p{font-size:1.05rem;color:var(--text2);max-width:560px;margin:0 auto 24px}
+.flow-indicator{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+.flow-step{padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:700;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.flow-step.active{background:var(--grad1);color:#fff;border-color:transparent}
+.flow-arrow{color:var(--text2);font-size:.8rem}
+.hero-stats{display:flex;justify-content:center;gap:24px;flex-wrap:wrap}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad-sm);padding:14px 22px;text-align:center;min-width:90px}
+.stat-card .num{font-size:1.7rem;font-weight:800;color:var(--primary)}.stat-card .lbl{font-size:.75rem;color:var(--text2)}
+
+.tabs-nav{display:flex;gap:3px;padding:3px;background:var(--surface);border-radius:var(--rad);margin-bottom:28px;overflow-x:auto;border:1px solid var(--border)}
+.tab-btn{flex:1;min-width:80px;padding:11px 12px;border:none;border-radius:12px;background:transparent;color:var(--text2);font-size:.8rem;font-weight:600;cursor:pointer;transition:var(--tr);white-space:nowrap;display:flex;align-items:center;gap:6px;justify-content:center}
+.tab-btn:hover{color:var(--text);background:var(--surface2)}
+.tab-btn.active{background:var(--grad1);color:#fff;box-shadow:0 4px 20px rgba(167,139,250,.3)}
+.tab-content{display:none;animation:fadeIn .35s ease}.tab-content.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.sec-hdr{margin-bottom:22px}.sec-hdr h2{font-size:1.5rem;font-weight:700;margin-bottom:2px}
+.sec-hdr .sub{color:var(--text2);font-size:.85rem}
+.phase-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;margin-bottom:6px}
+.p1{background:rgba(167,139,250,.15);color:var(--primary)}.p2{background:rgba(6,182,212,.15);color:var(--accent)}
+.p3{background:rgba(236,72,153,.15);color:var(--pink)}.p4{background:rgba(245,158,11,.15);color:var(--orange)}
+.p5{background:rgba(16,185,129,.15);color:var(--green)}.p6{background:rgba(239,68,68,.15);color:var(--red)}
+.p-star{background:rgba(251,191,36,.15);color:var(--star)}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);padding:24px;box-shadow:0 4px 32px rgba(0,0,0,.25);transition:var(--tr)}
+.card:hover{border-color:rgba(167,139,250,.3)}
+.card h3{font-size:1.05rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px}
+.card-full{grid-column:1/-1}
+
+.fg{margin-bottom:14px}.fg label{display:block;font-size:.78rem;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.fg .req{color:var(--red)}
+input[type="file"]{padding:8px 12px;background:var(--surface2);border:1px dashed var(--border);border-radius:var(--rad-sm);color:var(--text2);font-size:.82rem;cursor:pointer}
+input[type="file"]:hover{border-color:var(--primary);color:var(--primary)}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(167,139,250,.12)}
+textarea{resize:vertical;min-height:70px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.hint{font-size:.74rem;color:var(--text2);margin-top:3px}
+
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border:none;border-radius:var(--rad-sm);font-size:.85rem;font-weight:700;cursor:pointer;transition:var(--tr);font-family:inherit}
+.btn-p{background:var(--grad1);color:#fff;box-shadow:0 4px 20px rgba(167,139,250,.25)}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(167,139,250,.35)}
+.btn-s{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-s:hover{border-color:var(--primary);color:var(--primary)}
+.btn-sm{padding:7px 14px;font-size:.78rem;border-radius:7px}
+.btn-block{width:100%;justify-content:center}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+.btn .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:none}
+.btn.loading .spinner{display:block}.btn.loading .btn-text{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.result{display:none;margin-top:14px;padding:14px;border-radius:var(--rad-sm);background:var(--surface2);border:1px solid var(--border);font-size:.82rem;max-height:350px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+.result.show{display:block}.result.ok{border-color:var(--green)}.result.err{border-color:var(--red)}
+
+.pcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);padding:20px;transition:var(--tr);cursor:pointer;display:flex;gap:14px;align-items:flex-start}
+.pcard:hover{border-color:var(--primary);transform:translateY(-1px)}
+.pavatar{width:50px;height:50px;border-radius:50%;background:var(--grad1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:800;color:#fff}
+.pinfo{flex:1}.pinfo .name{font-size:1.05rem;font-weight:700}
+.pinfo .meta{font-size:.78rem;color:var(--text2);margin-top:1px}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.tag{padding:2px 9px;border-radius:20px;font-size:.7rem;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+
+.story-timeline{display:flex;flex-direction:column;gap:0;position:relative;padding-left:24px}
+.story-timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--grad2)}
+.story-milestone{position:relative;padding:12px 0 12px 20px}
+.story-milestone::before{content:'';position:absolute;left:-20px;top:18px;width:12px;height:12px;border-radius:50%;background:var(--grad2);border:2px solid var(--surface)}
+.story-milestone.current::before{background:var(--star);box-shadow:0 0 12px var(--star)}
+.story-milestone .m-week{font-size:.68rem;font-weight:700;color:var(--accent);text-transform:uppercase}
+.story-milestone .m-title{font-weight:700;margin:2px 0}
+.story-milestone .m-desc{font-size:.8rem;color:var(--text2)}
+.story-milestone .m-mood{font-size:.72rem;color:var(--pink);margin-top:2px}
+
+.chat-container{border:1px solid var(--border);border-radius:var(--rad);background:var(--surface);overflow:hidden}
+.chat-msgs{height:340px;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px}
+.chat-msg{max-width:80%;padding:10px 14px;border-radius:14px;font-size:.84rem;line-height:1.5}
+.chat-msg.user{align-self:flex-end;background:var(--grad1);color:#fff;border-bottom-right-radius:3px}
+.chat-msg.bot{align-self:flex-start;background:var(--surface2);color:var(--text);border-bottom-left-radius:3px}
+.chat-msg .sndr{font-size:.7rem;font-weight:700;margin-bottom:3px;opacity:.7}
+.chat-input-area{display:flex;gap:6px;padding:10px;border-top:1px solid var(--border)}
+.chat-input-area input{flex:1}
+
+.inbox-item{display:flex;gap:12px;padding:12px;border-bottom:1px solid var(--border);align-items:flex-start;cursor:pointer;transition:var(--tr)}
+.inbox-item:hover{background:var(--surface2)}.inbox-item.new{border-left:2px solid var(--primary)}
+.inbox-avatar{width:32px;height:32px;border-radius:50%;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.8rem}
+.inbox-info{flex:1}.inbox-from{font-weight:700;font-size:.82rem}
+.inbox-preview{font-size:.78rem;color:var(--text2);margin-top:1px}.inbox-meta{font-size:.68rem;color:var(--text2)}
+.inbox-status{padding:2px 8px;border-radius:10px;font-size:.65rem;font-weight:700}
+.inbox-status.new{background:rgba(167,139,250,.15);color:var(--primary)}
+.inbox-status.replied{background:rgba(16,185,129,.15);color:var(--green)}
+
+.trend-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad-sm);padding:14px;transition:var(--tr)}
+.trend-card:hover{border-color:var(--accent)}.trend-card .tsrc{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:4px}
+.trend-card .ttitle{font-weight:700;margin-bottom:3px}.trend-card .tdesc{font-size:.8rem;color:var(--text2)}
+.score-bar{flex:1;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-top:6px}
+.score-fill{height:100%;border-radius:2px;transition:width .5s}
+
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day-header{text-align:center;font-size:.7rem;font-weight:700;color:var(--text2);padding:6px 0}
+.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:.78rem;cursor:pointer;transition:var(--tr)}
+.cal-day:hover{background:var(--surface2)}.cal-day.today{background:var(--grad1);color:#fff;font-weight:700}
+
+.help-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--surface2);color:var(--text2);font-size:.65rem;font-weight:700;cursor:help;border:1px solid var(--border);flex-shrink:0}
+.help-icon:hover{color:var(--primary);border-color:var(--primary)}
+.help-text{display:none;font-size:.75rem;color:var(--text2);background:var(--surface2);padding:8px 12px;border-radius:7px;margin-top:3px;border:1px solid var(--border);line-height:1.4}
+.help-text.show{display:block}
+
+.toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px}
+.toast{padding:12px 18px;border-radius:var(--rad-sm);background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.4);font-size:.82rem;font-weight:600;animation:slideIn .3s ease;display:flex;align-items:center;gap:8px}
+.toast.ok{border-color:var(--green);border-left:3px solid var(--green)}
+.toast.err{border-color:var(--red);border-left:3px solid var(--red)}
+@keyframes slideIn{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+
+/* ===== PERSONA TAB REDESIGN ===== */
+.p-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:20px;align-items:start}
+.p-form-col{display:flex;flex-direction:column;gap:14px}
+.p-list-col{display:flex;flex-direction:column;gap:14px}
+@media(max-width:1024px){.p-grid{grid-template-columns:1fr}}
+
+.p-gen-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.p-concept-input{font-size:.95rem;padding:14px 16px;border-radius:12px;background:var(--surface2);border:2px solid var(--border);color:var(--text);transition:var(--tr);width:100%;font-family:inherit}
+.p-concept-input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(167,139,250,.15);background:var(--surface)}
+.p-concept-input::placeholder{color:var(--text2);opacity:.6}
+
+.p-quick-hints{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.p-hint-chip{padding:5px 12px;border-radius:20px;font-size:.72rem;font-weight:600;background:var(--surface2);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:var(--tr);white-space:nowrap}
+.p-hint-chip:hover{background:rgba(167,139,250,.12);border-color:var(--primary);color:var(--primary)}
+
+.p-opt-toggle{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin:14px 0 6px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;font-size:.85rem;font-weight:600;color:var(--text2);transition:var(--tr);user-select:none}
+.p-opt-toggle:hover{border-color:var(--primary);color:var(--primary)}
+.p-opt-arrow{transition:transform .3s ease;font-size:.9rem}
+.p-opt-arrow.open{transform:rotate(180deg)}
+
+.p-extra-opts{display:none;animation:fadeIn .3s ease;padding:16px 0 6px}
+.p-extra-opts.show{display:block}
+.p-opt-divider{margin:14px 0 10px;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent)}
+.p-opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:10px}
+@media(max-width:600px){.p-opt-grid{grid-template-columns:1fr}}
+.p-opt-grid .fg{margin-bottom:0}
+.p-opt-grid label{font-size:.78rem;font-weight:600;color:var(--text2);margin-bottom:5px;display:block}
+.p-opt-grid input,.p-opt-grid select{width:100%;padding:10px 13px;font-size:.85rem;border-radius:10px;background:var(--surface2);border:2px solid var(--border);color:var(--text);transition:var(--tr);font-family:inherit;box-sizing:border-box}
+.p-opt-grid input:focus,.p-opt-grid select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(167,139,250,.12);background:var(--surface)}
+.p-opt-grid select{cursor:pointer}
+.p-opt-grid input::placeholder{color:var(--text2);opacity:.5}
+
+.p-opt-field-full{margin-bottom:8px}
+.p-opt-field-full label{font-size:.78rem;font-weight:600;color:var(--text2);margin-bottom:5px;display:block}
+.p-opt-field-full input,.p-opt-field-full textarea{width:100%;padding:10px 13px;font-size:.85rem;border-radius:10px;background:var(--surface2);border:2px solid var(--border);color:var(--text);transition:var(--tr);font-family:inherit;box-sizing:border-box}
+.p-opt-field-full input:focus,.p-opt-field-full textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(167,139,250,.12);background:var(--surface)}
+.p-opt-field-full textarea{resize:vertical;min-height:48px}
+.p-opt-field-full input::placeholder,.p-opt-field-full textarea::placeholder{color:var(--text2);opacity:.5}
+
+.p-upload-area{position:relative;border:2px dashed var(--border);border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;transition:var(--tr);background:var(--surface2)}
+.p-upload-area:hover{border-color:var(--primary);background:rgba(167,139,250,.06)}
+.p-upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.p-upload-placeholder{font-size:.82rem;color:var(--text2);pointer-events:none}
+.p-img-previews{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.p-img-previews div{position:relative;width:56px;height:56px;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex-shrink:0}
+.p-img-previews img{width:100%;height:100%;object-fit:cover}
+.p-img-previews .p-remove-img{position:absolute;top:2px;right:2px;background:var(--red);color:#fff;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;line-height:1}
+
+.p-gen-btn{margin-top:12px;padding:14px 28px;font-size:1rem;border-radius:14px}
+.p-gen-btn .spinner{width:18px;height:18px}
+
+.p-list-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.p-persona-list{display:flex;flex-direction:column;gap:10px;max-height:620px;overflow-y:auto}
+
+/* Persona card redesign */
+.pcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);padding:18px;transition:var(--tr);cursor:pointer;display:flex;gap:14px;align-items:flex-start}
+.pcard:hover{border-color:var(--primary);transform:translateY(-1px);box-shadow:0 4px 20px rgba(167,139,250,.1)}
+.pavatar{width:46px;height:46px;border-radius:50%;background:var(--grad1);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;color:#fff}
+.pinfo{flex:1;min-width:0}
+.pinfo .name{font-size:1rem;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pinfo .p-meta-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:1px;font-size:.78rem;color:var(--text2)}
+.pinfo .p-bio{font-size:.78rem;color:var(--text2);margin-top:4px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.p-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+.p-tag{padding:2px 8px;border-radius:20px;font-size:.68rem;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.p-tag.pet{color:var(--orange);border-color:rgba(245,158,11,.25)}
+.p-tag.relation{color:var(--pink);border-color:rgba(236,72,153,.2)}
+.p-tag.followers{color:var(--green);border-color:rgba(16,185,129,.2)}
+
+.p-del-btn{flex-shrink:0;padding:4px 8px;font-size:.85rem;background:transparent;border:1px solid transparent;border-radius:8px;color:var(--text2);cursor:pointer;transition:var(--tr);opacity:.5;margin-top:2px}
+.p-del-btn:hover{opacity:1;background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:var(--red)}
+
+@media(max-width:768px){.hero h1{font-size:1.8rem}.card-grid{grid-template-columns:1fr}.frow{grid-template-columns:1fr}.tab-btn{font-size:.7rem;padding:8px 6px}}
+</style>
+</head>
+<body>
+<header class="hdr"><div class="container">
+<div class="logo"><div class="logo-icon">🧠</div>PersonaOS</div>
+<span class="badge">7 Engines · Story-first Flow</span>
+</div></header>
+
+<div class="container">
+<section class="hero">
+<h1>Hệ điều hành AI Influencer</h1>
+<p>Persona → Story → Memory → Content → Publish → Community. Nhân vật có CUỘC ĐỜI, không chỉ là máy tạo content.</p>
+<div class="flow-indicator" id="flowIndicator">
+<span class="flow-step active">👤 Persona</span><span class="flow-arrow">→</span>
+<span class="flow-step">📖 Story</span><span class="flow-arrow">→</span>
+<span class="flow-step">🧠 Memory</span><span class="flow-arrow">→</span>
+<span class="flow-step">✨ Content</span><span class="flow-arrow">→</span>
+<span class="flow-step">🚀 Publish</span><span class="flow-arrow">→</span>
+<span class="flow-step">💬 Community</span>
+</div>
+<div class="hero-stats">
+<div class="stat-card"><div class="num" id="statPersonas">0</div><div class="lbl">Personas</div></div>
+<div class="stat-card"><div class="num" id="statStories">0</div><div class="lbl">Stories</div></div>
+<div class="stat-card"><div class="num" id="statContent">0</div><div class="lbl">Bài đăng</div></div>
+<div class="stat-card"><div class="num">7/10</div><div class="lbl">Engines</div></div>
+</div>
+</section>
+
+<nav class="tabs-nav" id="tabsNav">
+<button class="tab-btn active" data-tab="tab-persona"><span class="tab-icon">👤</span>Persona</button>
+<button class="tab-btn" data-tab="tab-story"><span class="tab-icon">📖</span>Story ⭐</button>
+<button class="tab-btn" data-tab="tab-memory"><span class="tab-icon">🧠</span>Ký ức</button>
+<button class="tab-btn" data-tab="tab-content"><span class="tab-icon">✨</span>Nội dung</button>
+<button class="tab-btn" data-tab="tab-publish"><span class="tab-icon">🚀</span>Đăng bài</button>
+<button class="tab-btn" data-tab="tab-community"><span class="tab-icon">💬</span>Cộng đồng</button>
+<button class="tab-btn" data-tab="tab-trend"><span class="tab-icon">🔥</span>Xu hướng</button>
+<button class="tab-btn" data-tab="tab-inbox"><span class="tab-icon">📨</span>Social Inbox</button>
+</nav>
+
+<!-- PERSONA TAB -->
+<section class="tab-content active" id="tab-persona">
+<div class="sec-hdr">
+  <span class="phase-badge p1">Giai đoạn 1</span>
+  <h2>👤 Persona Engine — Tạo nhân vật AI</h2>
+  <p class="sub">Chỉ cần concept ngắn gọn — AI tự điền mọi thứ còn lại!</p>
+</div>
+
+<div class="p-grid">
+  <!-- === LEFT: Tạo Persona === -->
+  <div class="p-form-col">
+    <div class="card">
+      <div class="p-gen-header">
+        <div>
+          <h3 style="margin:0;font-size:1.1rem">✨ AI Tạo Persona</h3>
+          <p style="margin:2px 0 0;font-size:.8rem;color:var(--text2)">Nhập concept → AI tự sinh tên, ngoại hình, tính cách, quan hệ, mục tiêu</p>
+        </div>
+        <span class="help-icon" onclick="toggleHelp(this)" style="width:20px;height:20px">?</span>
+      </div>
+      <div class="help-text">AI sẽ tạo persona với: tên, biệt danh, ngoại hình CHI TIẾT, phong cách thời trang, điểm thu hút đặc biệt, tính cách, mục tiêu cuộc đời, mối quan hệ, prompt sinh ảnh avatar.</div>
+
+      <!-- MAIN: Concept textarea -->
+      <div class="fg">
+        <label>📝 Concept <span class="req">*</span></label>
+        <textarea id="genConcept" rows="4" class="p-concept-input" placeholder="Mô tả ngắn gọn về nhân vật bạn muốn tạo...
+
+VD: Cô gái 25t, Content Creator lifestyle & thời trang. Có nụ cười tỏa nắng, phong cách thanh lịch cá tính. Nuôi mèo tên Miu. Thích cafe, đọc sách tâm lý học."></textarea>
+        <div class="p-quick-hints">
+          <span class="p-hint-chip" onclick="fillPrompt('Một cô gái 25 tuổi, Content Creator về lifestyle và thời trang. Phong cách thanh lịch, nữ tính. Có nuôi mèo.')">👩 Lifestyle</span>
+          <span class="p-hint-chip" onclick="fillPrompt('Một chàng trai 28 tuổi, Travel Blogger. Thích khám phá ẩm thực và chụp ảnh. Cá tính, phóng khoáng.')">🧑 Travel</span>
+          <span class="p-hint-chip" onclick="fillPrompt('Một cô gái 22 tuổi, sinh viên ngành Design. Cá tính, năng động, yêu nghệ thuật đường phố và âm nhạc indie.')">🎨 Gen Z</span>
+          <span class="p-hint-chip" onclick="fillPrompt('Một người đàn ông 35 tuổi, doanh nhân công nghệ. Lịch lãm, thông minh, đam mê đầu tư và khởi nghiệp.')">💼 Business</span>
+        </div>
+      </div>
+
+      <!-- OPTIONS: Collapsible details -->
+      <div class="p-opt-toggle" onclick="togglePersonaOpts()">
+        <span>⚙️ Tùy chỉnh thêm (không bắt buộc)</span>
+        <span class="p-opt-arrow" id="pOptArrow">▾</span>
+      </div>
+      <div id="pExtraOpts" class="p-extra-opts" style="display:none">
+
+        <div class="p-opt-grid">
+          <div class="p-opt-field-full">
+            <label>👤 Tên</label>
+            <input id="genName" placeholder="Để trống → AI tự đặt">
+          </div>
+          <div class="p-opt-field-full">
+            <label>⭐ Biệt danh</label>
+            <input id="genNickname" placeholder="Để trống → AI tự đặt">
+          </div>
+          <div class="p-opt-field-full">
+            <label>🎂 Tuổi</label>
+            <input type="number" id="genAgeVal" placeholder="VD: 25" min="16" max="60">
+          </div>
+          <div class="p-opt-field-full">
+            <label>🚻 Giới tính</label>
+            <select id="genGender"><option value="">Tự do</option><option value="nữ">Nữ</option><option value="nam">Nam</option></select>
+          </div>
+          <div class="p-opt-field-full">
+            <label>💼 Nghề nghiệp</label>
+            <input id="genOccupation" placeholder="VD: Content Creator">
+          </div>
+          <div class="p-opt-field-full">
+            <label>📍 Địa điểm</label>
+            <input id="genLocation" placeholder="VD: Hồ Chí Minh">
+          </div>
+          <div class="p-opt-field-full">
+            <label>🎤 Giọng nói</label>
+            <select id="genVoice"><option value="">Tự do</option><option value="dịu dàng">Dịu dàng, nhẹ nhàng</option><option value="năng động">Năng động, hoạt bát</option><option value="hài hước">Hài hước, dí dỏm</option><option value="trầm tính">Trầm tính, sâu lắng</option><option value="quyến rũ">Quyến rũ, cuốn hút</option></select>
+          </div>
+          <div class="p-opt-field-full">
+            <label>🎯 Tính cách</label>
+            <select id="genPersonalityType"><option value="">Tự do</option><option value="introvert">Hướng nội (trầm lặng, suy tư)</option><option value="extrovert">Hướng ngoại (sôi nổi, thích giao tiếp)</option><option value="ambivert">Trung tính (linh hoạt)</option></select>
+          </div>
+        </div>
+
+        <div class="p-opt-divider"></div>
+
+        <div class="p-opt-field-full">
+          <label>💇 Ngoại hình chi tiết</label>
+          <textarea id="genAppearance" rows="2" placeholder="Tóc, mắt, dáng người... để trống → AI tự mô tả"></textarea>
+        </div>
+
+        <div class="p-opt-grid">
+          <div class="p-opt-field-full">
+            <label>🌟 Giống ai</label>
+            <input id="genLooksLike" placeholder="VD: Mix IU và Suzy">
+          </div>
+          <div class="p-opt-field-full">
+            <label>❤️ Sở thích</label>
+            <input id="genInterests" placeholder="VD: thời trang, chụp ảnh, cafe">
+          </div>
+        </div>
+
+        <div class="p-opt-field-full">
+          <label>👗 Phong cách thời trang</label>
+          <textarea id="genFashion" rows="2" placeholder="Mô tả style... để trống → AI tự tạo"></textarea>
+        </div>
+
+        <div class="p-opt-field-full">
+          <label>✨ Điểm thu hút</label>
+          <textarea id="genUniqueAppeal" rows="2" placeholder="Điều gì làm người ta nhớ về nhân vật..."></textarea>
+        </div>
+
+        <div class="p-opt-field-full">
+          <label>🖼️ Upload ảnh tham chiếu</label>
+          <div class="p-upload-area" id="pUploadArea">
+            <input type="file" id="genRefImage" accept="image/*" multiple onchange="uploadRefImage()">
+            <div class="p-upload-placeholder">📸 Click hoặc kéo thả ảnh người mẫu</div>
+          </div>
+          <div id="refImagesPreview" class="p-img-previews"></div>
+          <span id="uploadStatus" style="font-size:.75rem;color:var(--text2)"></span>
+        </div>
+      </div>
+
+      <button class="btn btn-p p-gen-btn" onclick="generatePersona()">
+        <span class="btn-text">✨ Tạo Persona bằng AI</span><span class="spinner"></span>
+      </button>
+    </div>
+
+    <div class="result" id="genResult"></div>
+  </div>
+
+  <!-- === RIGHT: Danh sách Personas === -->
+  <div class="p-list-col">
+    <div class="card">
+      <div class="p-list-header">
+        <h3 style="margin:0;font-size:1.05rem">📋 Personas</h3>
+        <button class="btn btn-s btn-sm" onclick="loadPersonas()">🔄</button>
+      </div>
+      <div id="personaList" class="p-persona-list"><p style="color:var(--text2);text-align:center;padding:40px">Chưa có persona. Tạo ngay! 🚀</p></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- STORY TAB -->
+<section class="tab-content" id="tab-story">
+<div class="sec-hdr"><span class="phase-badge p-star">⭐ Trái tim PersonaOS</span><h2>📖 Story Engine — Cuộc đời nhân vật</h2><p class="sub">Story Engine quyết định chuyện gì xảy ra mỗi tuần. Từ đó sinh Memory → Content → Publish. Đây là thứ làm PersonaOS khác biệt.</p></div>
+<div class="card-grid">
+<div class="card">
+<h3>📖 AI Tạo Story Mới <span class="help-icon" onclick="toggleHelp(this)">?</span></h3>
+<div class="help-text">AI tạo câu chuyện với: theme, emotional arc (cảm xúc thay đổi theo tuần), milestones (sự kiện mỗi tuần), content ideas. Các sự kiện tự động lưu vào timeline. Story liên kết với mục tiêu cuộc đời của persona.</div>
+<div class="fg"><label>Persona <span class="req">*</span></label><select id="storyPersonaId" onchange="loadActiveStory(this.value)"><option value="">-- Chọn persona --</option></select></div>
+<div class="frow">
+<div class="fg"><label>Khoảng thời gian</label><select id="storyScope"><option value="1_week">1 Tuần</option><option value="1_month" selected>1 Tháng</option><option value="3_months">3 Tháng</option></select></div>
+<div class="fg"><label>Chủ đề</label><select id="storyTheme"><option value="lifestyle">🏠 Lifestyle</option><option value="travel">✈️ Du lịch</option><option value="work">💼 Công việc</option><option value="romance">💕 Tình cảm</option><option value="health">💪 Sức khỏe</option><option value="hobby">🎨 Sở thích</option></select></div>
+</div>
+<button class="btn btn-p btn-block" onclick="generateStory()"><span class="btn-text">📖 AI Tạo Story + Life Events</span><span class="spinner"></span></button>
+<div class="result" id="storyResult"></div>
+</div>
+<div class="card"><h3>📋 Story Hiện Tại</h3>
+<div id="activeStory"><p style="color:var(--text2);text-align:center;padding:40px">Chọn persona để xem story đang hoạt động.</p></div>
+</div>
+</div>
+</section>
+
+<!-- MEMORY TAB -->
+<section class="tab-content" id="tab-memory">
+<div class="sec-hdr"><span class="phase-badge p2">Giai đoạn 2</span><h2>🧠 Memory Engine — 3 loại ký ức</h2><p class="sub">Long-term (danh tính), Episodic (sự kiện), Social (nhớ follower).</p></div>
+<div class="card-grid">
+<div class="card">
+<h3>💾 Thêm Ký ức</h3>
+<div class="fg"><label>Persona <span class="req">*</span></label><select id="memPersonaId"><option value="">-- Chọn persona --</option></select></div>
+<div class="frow">
+<div class="fg"><label>Phân loại</label><select id="memCat"><option value="episodic">📅 Episodic (sự kiện)</option><option value="long_term">🔒 Long-term (danh tính)</option><option value="social">👥 Social (nhớ follower)</option></select></div>
+<div class="fg"><label>Dạng</label><select id="memType"><option value="conversation">Hội thoại</option><option value="event">Sự kiện</option><option value="learning">Bài học</option><option value="emotion">Cảm xúc</option></select></div>
+</div>
+<div class="fg"><label>Tiêu đề</label><input id="memTitle" placeholder="VD: Lần đầu gặp crush"></div>
+<div class="fg"><label>Nội dung <span class="req">*</span></label><textarea id="memContent" placeholder="Mô tả ký ức..."></textarea></div>
+<div id="socialFields" style="display:none">
+<div class="fg"><label>Tên Follower</label><input id="memFollower" placeholder="VD: @minh anh"></div>
+<div class="fg"><label>Ghi chú</label><input id="memFollowerNote" placeholder="VD: Fan cũ 3 tháng, hay khen dễ thương"></div>
+</div>
+<button class="btn btn-p btn-block" onclick="addMemory()"><span class="btn-text">💾 Lưu Ký ức</span><span class="spinner"></span></button>
+<div class="result" id="memResult"></div>
+</div>
+<div class="card">
+<h3>📅 AI Tạo Timeline Sự kiện <span class="help-icon" onclick="toggleHelp(this)">?</span></h3>
+<div class="help-text">AI sinh chuỗi sự kiện liên kết thành câu chuyện. VD: Tuần 1 nhận nuôi mèo → Tuần 2 mèo ốm → Tuần 3 đưa mèo đi khám → Tuần 4 mèo khỏe. Tự động lưu vào DB.</div>
+<div class="fg"><label>Persona <span class="req">*</span></label><select id="lifePersonaId"><option value="">-- Chọn persona --</option></select></div>
+<div class="frow">
+<div class="fg"><label>Khoảng thời gian</label><select id="lifeScope"><option value="1_week">1 Tuần</option><option value="1_month" selected>1 Tháng</option><option value="3_months">3 Tháng</option></select></div>
+<div class="fg"><label>Chủ đề</label><select id="lifeTheme"><option value="lifestyle">Lifestyle</option><option value="travel">Du lịch</option><option value="work">Công việc</option><option value="romance">Tình cảm</option></select></div>
+</div>
+<button class="btn btn-p btn-block" onclick="generateLifeEvents()"><span class="btn-text">📅 AI Tạo Timeline</span><span class="spinner"></span></button>
+<div class="result" id="lifeResult"></div>
+</div>
+</div>
+</section>
+
+<!-- CONTENT TAB -->
+<section class="tab-content" id="tab-content">
+<div class="sec-hdr"><span class="phase-badge p3">Giai đoạn 3</span><h2>✨ Content Engine — Từ sự kiện sinh nội dung</h2><p class="sub">AI viết caption theo giọng điệu persona, dựa trên Persona + Memory + Timeline + Trend.</p></div>
+<div class="card-grid">
+<div class="card">
+<h3>📝 Tạo Nội dung từ Sự kiện <span class="help-icon" onclick="toggleHelp(this)">?</span></h3>
+<div class="help-text">AI lấy từ 4 nguồn: Persona + Memory + Timeline + Trend. Bạn có thể chọn sự kiện cụ thể làm nguồn cảm hứng (VD: "Mèo bị ốm" → Caption về việc đưa mèo đi khám).</div>
+<div class="fg"><label>Persona <span class="req">*</span></label><select id="contentPersonaId"><option value="">-- Chọn persona --</option></select></div>
+<div class="frow">
+<div class="fg"><label>Loại nội dung</label><select id="contentType"><option value="caption">📝 Caption</option><option value="facebook_post">📘 Facebook Post</option><option value="reel_script">🎬 Reel Script</option><option value="tiktok_script">🎵 TikTok Script</option><option value="story">📱 Story</option><option value="thread">🧵 Thread</option></select></div>
+<div class="fg"><label>Lấy cảm hứng từ</label><select id="contentSource"><option value="">🤖 AI tự chọn</option></select></div>
+</div>
+<div class="fg"><label>Gợi ý chủ đề</label><input id="contentTopic" placeholder="Để trống để AI tự chọn chủ đề phù hợp..."></div>
+<button class="btn btn-p btn-block" onclick="generateContent()"><span class="btn-text">✨ Tạo Nội dung</span><span class="spinner"></span></button>
+<div class="result" id="contentResult"></div>
+</div>
+<div class="card"><h3>📦 Tạo Hàng loạt (đa chủ đề)</h3>
+<div class="fg"><label>Persona <span class="req">*</span></label><select id="batchPersonaId"><option value="">-- Chọn persona --</option></select></div>
+<div class="fg"><label>Số lượng bài</label><input type="number" id="batchCount" value="5" min="1" max="20"></div>
+<p class="hint">AI tự chia chủ đề: bài mèo, bài đi làm, cafe, tâm sự, kế hoạch... → tự nhiên hơn!</p>
+<button class="btn btn-p btn-block" onclick="generateContentBatch()"><span class="btn-text">📦 Tạo {5} Bài</span><span class="spinner"></span></button>
+<div class="result" id="batchResult"></div>
+</div>
+</div>
+</section>
+
+<!-- PUBLISH TAB -->
+<section class="tab-content" id="tab-publish">
+<div class="sec-hdr"><span class="phase-badge p4">Giai đoạn 4</span><h2>🚀 Publishing Engine — Đăng + Lịch</h2><p class="sub">Flow đúng: Chọn Persona → Chọn bài đã tạo → Chọn nền tảng → Đăng/Lên lịch + Calendar.</p></div>
+<div class="card-grid">
+<div class="card">
+<h3>📤 Đăng bài đã tạo <span class="help-icon" onclick="toggleHelp(this)">?</span></h3>
+<div class="help-text">Không nhập caption trực tiếp. Chọn bài viết đã tạo ở Content Engine, chọn nền tảng, rồi đăng. Có thể lên lịch cho tương lai.</div>
+<div class="fg"><label>Persona <span class="req">*</span></label><select id="pubPostPersonaId" onchange="loadContentForPublish()"><option value="">-- Chọn persona --</option></select></div>
+<div class="fg"><label>Chọn bài viết <span class="req">*</span></label><select id="pubContentSelect"><option value="">-- Chọn bài viết --</option></select></div>
+<div class="fg"><label>Nền tảng</label><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px" id="pubPlatforms">
+<label style="display:flex;align-items:center;gap:3px;font-size:.8rem;cursor:pointer"><input type="checkbox" value="instagram" checked> Instagram</label>
+<label style="display:flex;align-items:center;gap:3px;font-size:.8rem;cursor:pointer"><input type="checkbox" value="facebook" checked> Facebook</label>
+<label style="display:flex;align-items:center;gap:3px;font-size:.8rem;cursor:pointer"><input type="checkbox" value="threads" checked> Threads</label>
+<label style="display:flex;align-items:center;gap:3px;font-size:.8rem;cursor:pointer"><input type="checkbox" value="x"> X</label>
+<label style="display:flex;align-items:center;gap:3px;font-size:.8rem;cursor:pointer"><input type="checkbox" value="tiktok"> TikTok</label>
+</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-p" style="flex:1" onclick="publishPost()"><span class="btn-text">🚀 Đăng ngay</span><span class="spinner"></span></button>
+<button class="btn btn-s" style="flex:1">📅 Lên lịch</button>
+</div>
+<div class="result" id="pubPostResult"></div>
+</div>
+<div class="card"><h3>📅 Calendar</h3><div id="pubCalendar"></div><p class="hint" style="text-align:center;margin-top:8px">📌 Chấm xanh = có bài đăng</p></div>
+</div>
+</section>
+
+<!-- COMMUNITY TAB -->
+<section class="tab-content" id="tab-community">
+<div class="sec-hdr"><span class="phase-badge p5">Giai đoạn 5</span><h2>💬 Community Engine — Tương tác thông minh</h2><p class="sub">Phân tích sentiment, auto-reply in-character, quản lý trạng thái (pending/replied/ignored).</p></div>
+<div class="card-grid">
+<div class="card"><h3>🔍 Phân tích Bình luận</h3>
+<div class="fg"><label>Persona <span class="req">*</span></label><select id="cmtPersonaId"><option value="">-- Chọn persona --</option></select></div>
+<div class="fg"><label>Bình luận <span class="req">*</span></label><textarea id="cmtContent" placeholder="VD: Chị dễ thương quá, em follow chị 3 tháng rồi ❤️"></textarea></div>
+<button class="btn btn-p btn-block" onclick="analyzeComment()"><span class="btn-text">🔍 Phân tích Sentiment</span><span class="spinner"></span></button>
+<div class="result" id="cmtResult"></div>
+</div>
+<div class="card"><h3>💬 Auto Reply Hàng loạt</h3>
+<div class="fg"><label>Persona <span class="req">*</span></label><select id="autoReplyPersonaId"><option value="">-- Chọn persona --</option></select></div>
+<div class="fg"><label>Bình luận (mỗi dòng 1 bình luận) <span class="req">*</span></label><textarea id="autoReplyComments" rows="5" placeholder="Chị đẹp quá!&#10;Chị dùng laptop gì thế?&#10;Nội dung nhạt nhẽo...&#10;Yêu chị ❤️"></textarea></div>
+<button class="btn btn-p btn-block" onclick="autoReply()"><span class="btn-text">💬 Tự động Trả lời</span><span class="spinner"></span></button>
+<div class="result" id="autoReplyResult"></div>
+</div>
+</div>
+</section>
+
+<!-- TREND TAB -->
+<section class="tab-content" id="tab-trend">
+<div class="sec-hdr"><span class="phase-badge p6">Giai đoạn 6</span><h2>🔥 Trend Engine — Bắt xu hướng</h2><p class="sub">Phát hiện trend, chấm điểm Trend Score + Relevance Score, tạo nội dung theo trend.</p></div>
+<div class="card-grid">
+<div class="card"><h3>🔍 Xu hướng mới nhất</h3>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="trendSources">
+<label style="display:flex;align-items:center;gap:3px;font-size:.8rem;cursor:pointer"><input type="checkbox" value="tiktok" checked> TikTok</label>
+<label style="display:flex;align-items:center;gap:3px;font-size:.8rem;cursor:pointer"><input type="checkbox" value="instagram" checked> Instagram</label>
+<label style="display:flex;align-items:center;gap:3px;font-size:.8rem;cursor:pointer"><input type="checkbox" value="reddit" checked> Reddit</label>
+<label style="display:flex;align-items:center;gap:3px;font-size:.8rem;cursor:pointer"><input type="checkbox" value="x" checked> X</label>
+</div>
+<button class="btn btn-p btn-block" onclick="fetchTrends()"><span class="btn-text">🔍 Lấy Xu hướng</span><span class="spinner"></span></button>
+<div id="trendResult" style="display:flex;flex-direction:column;gap:6px;margin-top:12px;max-height:400px;overflow-y:auto"></div>
+</div>
+<div class="card"><h3>🎯 Gợi ý cho Persona</h3>
+<div class="fg"><label>Persona <span class="req">*</span></label><select id="trendPersonaId"><option value="">-- Chọn persona --</option></select></div>
+<div class="fg"><label>Số gợi ý</label><input type="number" id="trendTopK" value="5" min="1" max="10"></div>
+<button class="btn btn-p btn-block" onclick="recommendTrends()"><span class="btn-text">🎯 Gợi ý + Tạo Content</span><span class="spinner"></span></button>
+<div id="trendRecommendResult" style="display:flex;flex-direction:column;gap:8px;margin-top:12px"></div>
+</div>
+</div>
+</section>
+
+<!-- SOCIAL INBOX TAB -->
+<section class="tab-content" id="tab-inbox">
+<div class="sec-hdr"><span class="phase-badge p5">Unified</span><h2>📨 Social Inbox — Tổng hợp tất cả tin nhắn</h2><p class="sub">Instagram DM + Facebook + Threads + X — tất cả vào một nơi. AI đọc → phân loại → trả lời. Có trạng thái: new/pending/replied.</p></div>
+<div class="card-grid">
+<div class="card"><h3>📨 Inbox Tổng hợp</h3>
+<div class="fg"><label>Persona</label><select id="inboxPersonaId" onchange="loadInbox()"><option value="">-- Chọn persona --</option></select></div>
+<div id="inboxList" style="margin-top:12px;max-height:400px;overflow-y:auto"><p style="color:var(--text2);text-align:center;padding:40px">Chọn persona để xem inbox tổng hợp.</p></div>
+</div>
+<div class="card"><h3>💬 Chat với Persona</h3>
+<div class="fg"><label>Chọn Persona</label><select id="chatPersonaSelect" onchange="switchChatPersona()"><option value="">-- Chọn persona --</option></select></div>
+<div class="chat-container"><div class="chat-msgs" id="chatMessages"><div class="chat-msg bot"><div class="sndr">PersonaOS</div>👋 Chào bạn! Chọn persona để bắt đầu trò chuyện.</div></div>
+<div class="chat-input-area"><input id="chatInput" placeholder="Nhập tin nhắn..." onkeydown="if(event.key==='Enter')sendChat()"><button class="btn btn-p" onclick="sendChat()">Gửi ➤</button></div></div>
+</div>
+</div>
+</section>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ── EDIT PERSONA MODAL ── -->
+<div id="editModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:800px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+<h3 style="margin:0;font-size:1.15rem">✏️ Chỉnh sửa Persona</h3>
+<button onclick="closeEditModal()" style="background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer">✕</button>
+</div>
+<div id="editFields" style="display:flex;flex-direction:column;gap:10px"></div>
+<div style="display:flex;gap:8px;margin-top:18px">
+<button class="btn btn-p" style="flex:1" onclick="saveEdit()"><span class="btn-text">💾 Lưu thay đổi</span><span class="spinner"></span></button>
+<button class="btn btn-s" onclick="regenerateField()">🔄 Sinh lại mục đã chọn</button>
+<button class="btn btn-s" onclick="closeEditModal()">Hủy</button>
+</div>
+<div class="result" id="editResult"></div>
+</div>
+</div>
+
+<script>
+const A='/api/v1';let activeChatPersonaId=null,personasCache=[];
+function toggleHelp(i){const h=i.parentElement?.nextElementSibling||i.closest('.p-gen-header')?.nextElementSibling;if(h?.classList)h.classList.toggle('show')}
+function togglePersonaOpts(){const o=document.getElementById('pExtraOpts'),a=document.getElementById('pOptArrow');o.classList.toggle('show');o.style.display=o.classList.contains('show')?'block':'none';a.classList.toggle('open')}
+function fillPrompt(t){document.getElementById('genConcept').value=t;document.getElementById('genConcept').focus()}
+function toast(m,t='ok'){const c=document.getElementById('toastContainer'),e=document.createElement('div');e.className=`toast ${t}`;e.textContent=m;c.appendChild(e);setTimeout(()=>{e.style.opacity='0';e.style.transition='opacity .3s';setTimeout(()=>e.remove(),300)},3500)}
+function showResult(id,d,er=!1,isHtml=!1){const el=document.getElementById(id);if(isHtml){el.innerHTML=d}else{el.textContent=typeof d==='string'?d:JSON.stringify(d,null,2)};el.className='result show '+(er?'err':'ok')}
+function loading(b,l){if(l){b.classList.add('loading');b.disabled=!0}else{b.classList.remove('loading');b.disabled=!1}}
+async function api(m,p,b=null){const o={method:m,headers:{'Content-Type':'application/json'}};if(b)o.body=JSON.stringify(b);const r=await fetch(A+p,o);if(r.status===204)return null;const d=await r.json();if(!r.ok)throw new Error(d.detail||'Lỗi '+r.status);return d}
+
+async function loadPersonas(){try{personasCache=await api('GET','/personas?limit=100&is_active=true');const sels=['memPersonaId','lifePersonaId','contentPersonaId','batchPersonaId','pubPostPersonaId','cmtPersonaId','autoReplyPersonaId','trendPersonaId','storyPersonaId','inboxPersonaId','chatPersonaSelect'];sels.forEach(sid=>{const s=document.getElementById(sid);if(!s)return;s.innerHTML='<option value="">-- Chọn persona --</option>';personasCache.forEach(p=>{s.innerHTML+=`<option value="${p.id}">${p.name} (${p.age}t, ${p.occupation})</option>`})});document.getElementById('statPersonas').textContent=personasCache.length;renderPersonaList(personasCache)}catch(e){console.error(e)}}
+
+function renderPersonaList(ps){const el=document.getElementById('personaList');if(!ps.length){el.innerHTML='<p style="color:var(--text2);text-align:center;padding:40px">Chưa có persona. Tạo ngay! 🚀</p>';return}
+el.innerHTML=ps.map(p=>{
+  const av=p.avatar_url?(p.avatar_url.startsWith('http')?p.avatar_url:window.location.origin+p.avatar_url):null;
+  return `<div class="pcard">
+<div class="pavatar" ${av?'style="background:none;overflow:hidden"':''}>${av?`<img src="${av}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\'${p.name.charAt(0)}\';this.parentElement.style.background=\'var(--grad1)\'">`:p.name.charAt(0)}</div>
+<div class="pinfo" onclick="editPersona('${p.id}')" style="cursor:pointer">
+<div class="name">${p.name} ${p.nickname?`<span style="color:var(--star)">"${p.nickname}"</span>`:''}</div>
+<div class="p-meta-row"><span>${p.age}t</span>·<span>${p.occupation||'?'}</span>·<span>${p.location||'VN'}</span>·<span>${p.personality_type||'ambivert'}</span></div>
+${(p.concept_description||p.unique_appeal)?`<div class="p-bio">${(p.concept_description||p.unique_appeal||'').substring(0,150)}</div>`:''}
+<div class="p-tags">${(p.interests||[]).slice(0,4).map(i=>`<span class="p-tag">${i}</span>`).join('')}
+${(p.relationships||[]).slice(0,3).map(r=>`<span class="p-tag ${r.type==='pet'?'pet':''}">${r.type==='pet'?'🐾':r.type==='crush'?'💕':'👥'} ${r.name}</span>`).join('')}
+<span class="p-tag followers">${p.follower_count||0} fl</span>
+<span class="p-tag">👗 ${(p.fashion_style||'?').substring(0,18)}</span></div>
+</div>
+<button class="btn btn-sm p-del-btn" onclick="event.stopPropagation();deletePersona('${p.id}','${p.name}')" title="Xóa persona">🗑️</button>
+</div>`}).join('')}
+
+document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
+document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');
+updateFlow(b.dataset.tab)}));
+
+function updateFlow(tab){const steps=document.querySelectorAll('.flow-step');steps.forEach(s=>s.classList.remove('active'));const map={'tab-persona':0,'tab-story':1,'tab-memory':2,'tab-content':3,'tab-publish':4,'tab-community':5,'tab-trend':5,'tab-inbox':5};const idx=map[tab]||0;for(let i=0;i<=idx;i++)if(steps[i])steps[i].classList.add('active')}
+
+document.getElementById('memCat')?.addEventListener('change',function(){document.getElementById('socialFields').style.display=this.value==='social'?'block':'none'});
+
+document.getElementById('contentPersonaId')?.addEventListener('change',async function(){const pid=this.value;if(!pid)return;try{const events=await api('GET',`/personas/${pid}/life-events?limit=10`);const sel=document.getElementById('contentSource');sel.innerHTML='<option value="">🤖 AI tự chọn</option>';events.forEach(e=>{sel.innerHTML+=`<option value="${e.id}">📅 ${e.title}</option>`})}catch(e){}});
+
+// PERSONA
+let uploadedRefUrls=[];
+async function uploadRefImage(){
+  const input=document.getElementById('genRefImage');
+  const files=Array.from(input.files);
+  if(!files.length)return;
+  const st=document.getElementById('uploadStatus');st.textContent='⏳ Đang upload...';
+  for(const file of files){
+    const fd=new FormData();fd.append('file',file);
+    try{
+      const r=await fetch('/api/v1/media/upload',{method:'POST',body:fd});
+      if(!r.ok)throw new Error((await r.json()).detail);
+      const d=await r.json();
+      uploadedRefUrls.push(d.url);
+      const fullUrl=d.url.startsWith('http')?d.url:window.location.origin+d.url;
+      const pv=document.getElementById('refImagesPreview');
+      const div=document.createElement('div');
+      div.style.cssText='position:relative;width:60px;height:60px;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex-shrink:0';
+      div.innerHTML=`<img src="${fullUrl}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<div style=width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;background:var(--surface2);color:var(--text2)'>📸</div>'" crossorigin="anonymous"><span onclick="removeRef('${d.url}')" style="position:absolute;top:2px;right:2px;background:var(--red);color:#fff;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;line-height:1">✕</span>`;
+      pv.appendChild(div);
+      st.textContent='✅ Đã upload';
+      toast('✅ Ảnh đã upload!');
+    }catch(e){st.textContent='❌ Lỗi: '+(e.message||'upload thất bại');toast(e.message,'err')}
+  }
+  input.value='';
+}
+function removeRef(url){uploadedRefUrls=uploadedRefUrls.filter(u=>u!==url);document.getElementById('refImagesPreview').querySelectorAll('div').forEach(d=>{const img=d.querySelector('img');if(img&&img.src.includes(url))d.remove()})}
+
+async function generatePersona(){const b=document.querySelector('#tab-persona .p-gen-btn')||document.querySelector('#tab-persona .btn-p');loading(b,1);try{
+const body={
+  concept:document.getElementById('genConcept').value||'Tự do sáng tạo nhân vật thú vị',
+  // ── User-specified concrete values (AI MUST respect) ──
+  name:document.getElementById('genName').value||null,
+  nickname:document.getElementById('genNickname').value||null,
+  age:parseInt(document.getElementById('genAgeVal').value)||null,
+  gender:document.getElementById('genGender').value||null,
+  occupation:document.getElementById('genOccupation').value||null,
+  location:document.getElementById('genLocation').value||'Việt Nam',
+  // ── Detailed overrides ──
+  appearance_hint:document.getElementById('genAppearance').value||null,
+  looks_like:document.getElementById('genLooksLike').value||null,
+  voice_hint:document.getElementById('genVoice').value||null,
+  personality_type:document.getElementById('genPersonalityType').value||null,
+  fashion_hint:document.getElementById('genFashion').value||null,
+  unique_appeal:document.getElementById('genUniqueAppeal').value||null,
+  interests_hint:document.getElementById('genInterests').value||null,
+  // ── Legacy ──
+  reference_image_urls:uploadedRefUrls,
+  language:'vi',
+  creativity:.85
+};
+const p=await api('POST','/personas/generate',body);
+let txt=`✅ **${p.name}** (${p.nickname?`"${p.nickname}" · `:''}${p.age}t · ${p.occupation})\n\n`;
+txt+=`📝 **Concept:** ${p.concept_description||'Chưa có'}\n\n`;
+txt+=`💇 **Ngoại hình:** ${p.appearance?.description||'Chưa có'}\n`;
+if(p.appearance?.looks_like) txt+=`   Giống: ${p.appearance.looks_like}\n`;
+txt+=`\n👗 **Thời trang:** ${p.fashion_style||'Chưa có'}\n\n`;
+txt+=`✨ **Điểm thu hút:** ${p.unique_appeal||'Chưa có'}\n\n`;
+txt+=`🎤 **Giọng nói:** ${p.voice_style} · 🧠 **Tính cách:** ${p.personality_type}\n`;
+txt+=`❤️ **Sở thích:** ${(p.interests||[]).join(', ')}\n`;
+txt+=`💕 **Mối quan hệ:** ${(p.relationships||[]).map(r=>`${r.name} (${r.type})`).join(', ')||'Chưa có'}\n\n`;
+txt+=`🎯 **Mục tiêu:**\n${(p.life_goals||[]).map(g=>`  - ${g.goal} [${g.progress||0}%]`).join('\n')}\n\n`;
+if(p.avatar_url){txt+=`🖼️ **Avatar:** ${p.avatar_url}\n\n`}
+txt+=`🖼️ **Prompt sinh avatar:**\n${p.avatar_gen_prompt||'Chưa có'}`;
+// Show avatar image if available
+let html=txt.replace(/\n/g,'<br>');
+if(p.avatar_url){
+  const fullUrl = p.avatar_url.startsWith('http')?p.avatar_url:window.location.origin+p.avatar_url;
+  html=`<div style="text-align:center;margin-bottom:12px"><img src="${fullUrl}" style="max-width:200px;border-radius:50%;border:3px solid var(--primary)" onerror="this.parentElement.innerHTML='<div style=paddding:20px;font-size:.85rem;color:var(--text2)'>⚠️ Avatar chưa được sinh (cần cấu hình OpenAI DALL-E)</div>'"><p style="font-size:.75rem;color:var(--accent);margin-top:4px">🤖 Avatar (DALL-E)</p></div>`+html
+}
+showResult('genResult',html,!1,!0);toast('✅ '+p.name+' đã được tạo!');await loadPersonas();uploadedRefUrls=[];document.getElementById('refImagesPreview').innerHTML=''}catch(e){showResult('genResult','❌ Lỗi: '+e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
+
+// STORY
+async function generateStory(){const b=document.querySelector('#tab-story .btn-p');const pid=document.getElementById('storyPersonaId').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const scope=document.getElementById('storyScope').value,theme=document.getElementById('storyTheme').value;const s=await api('POST',`/stories/generate?persona_id=${pid}&time_scope=${scope}&theme=${theme}&creativity=0.75`);
+let txt=`📖 ${s.title}\n\n📝 ${s.description}\n\n⏰ ${s.time_scope} | 🏷️ ${s.theme}\n🎭 Cảm xúc: ${s.emotional_arc.join(' → ')}\n\n📅 ${s.milestones_count} Milestones:\n`;
+s.milestones.forEach(m=>{txt+=`\n📌 Tuần ${m.week}: ${m.title}\n   ${m.description||''}\n   😊 Mood: ${m.mood}\n   💡 Content ideas: ${(m.content_ideas||[]).join(', ')}\n   👥 ${(m.involves_relationships||[]).join(', ')}\n`});
+txt+=`\n🔗 ${s.generation_context?.how_connects_to_goals||''}`;
+showResult('storyResult',txt);toast(`✅ Story +${s.events_generated} life events!`);loadActiveStory(pid)}catch(e){showResult('storyResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
+
+async function loadActiveStory(pid){if(!pid)return;try{const s=await api('GET',`/stories/active/${pid}`);const el=document.getElementById('activeStory');let html=`<div style="margin-bottom:12px"><strong>${s.title}</strong> · ${s.time_scope} · ${s.theme} · 📊 ${s.progress}</div><div class="story-timeline">`;
+s.milestones.forEach(m=>{const cur=s.current_milestone&&s.current_milestone.week===m.week;html+=`<div class="story-milestone${cur?' current':''}"><div class="m-week">Tuần ${m.week}${cur?' ⬅ HIỆN TẠI':''}</div><div class="m-title">${m.title}</div><div class="m-desc">${m.description||''}</div><div class="m-mood">😊 ${m.mood}</div></div>`});
+html+=`</div>`;el.innerHTML=html}catch(e){document.getElementById('activeStory').innerHTML='<p style="color:var(--text2);text-align:center;padding:40px">Chưa có story. <a href="#" onclick="document.querySelector(\'[data-tab=tab-story]\').click()" style="color:var(--primary)">Tạo story mới →</a></p>'}}
+
+// MEMORY
+async function addMemory(){const b=document.querySelector('#tab-memory .btn-p');const pid=document.getElementById('memPersonaId').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const body={memory_type:document.getElementById('memType').value,title:document.getElementById('memTitle').value||null,content:document.getElementById('memContent').value,metadata:{memory_category:document.getElementById('memCat').value,follower_name:document.getElementById('memFollower').value||null,follower_notes:document.getElementById('memFollowerNote').value||null}};const r=await api('POST',`/personas/${pid}/memories`,body);showResult('memResult',r);toast('✅ Ký ức đã lưu!')}catch(e){showResult('memResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
+
+async function generateLifeEvents(){const b=document.querySelectorAll('#tab-memory .btn-p')[1];const pid=document.getElementById('lifePersonaId').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const r=await api('POST',`/personas/${pid}/life-events/generate?count=4`);showResult('lifeResult',r.map(e=>`📅 ${new Date(e.event_date).toLocaleDateString('vi')}: ${e.title}\n   ${e.description||''}\n   😊 ${e.mood_after||'?'}`).join('\n\n'));toast(`✅ ${r.length} sự kiện!`)}catch(e){showResult('lifeResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
+
+// CONTENT
+async function generateContent(){const b=document.querySelector('#tab-content .btn-p');const pid=document.getElementById('contentPersonaId').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const body={persona_id:pid,content_type:document.getElementById('contentType').value,topic_hint:document.getElementById('contentTopic').value,inspired_by_event_id:document.getElementById('contentSource').value||null,creativity:.8};const r=await api('POST','/content/generate',body);showResult('contentResult',`📝 ${r.content_type.toUpperCase()}:\n\n${r.caption}\n\n🏷️ ${(r.hashtags||[]).map(h=>'#'+h).join(' ')}`);toast('✅ Nội dung đã tạo!')}catch(e){showResult('contentResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
+
+async function generateContentBatch(){const b=document.querySelectorAll('#tab-content .btn-p')[1];const pid=document.getElementById('batchPersonaId').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const n=document.getElementById('batchCount').value;const r=await api('POST',`/content/generate/batch?persona_id=${pid}&count=${n}&creativity=0.8`);showResult('batchResult',r.map((x,i)=>`--- Bài ${i+1} ---\n${x.caption}\n🏷️ ${(x.hashtags||[]).map(h=>'#'+h).join(' ')}`).join('\n\n'));toast(`✅ ${r.length} bài!`)}catch(e){showResult('batchResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
+
+// PUBLISH
+async function loadContentForPublish(){const pid=document.getElementById('pubPostPersonaId').value;if(!pid)return;try{const posts=await api('GET',`/content/posts/${pid}?status=draft&limit=30`);const sel=document.getElementById('pubContentSelect');sel.innerHTML='<option value="">-- Chọn bài viết --</option>';posts.forEach(p=>{sel.innerHTML+=`<option value="${p.id}">${(p.caption||'').substring(0,80)}...</option>`})}catch(e){}}
+
+async function publishPost(){const b=document.querySelector('#tab-publish .btn-p');const pid=document.getElementById('pubPostPersonaId').value;const cid=document.getElementById('pubContentSelect').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const plats=Array.from(document.querySelectorAll('#pubPlatforms input:checked')).map(cb=>cb.value);const body={persona_id:pid,platforms:plats};if(cid)body.content_post_id=cid;const r=await api('POST','/publishing/publish',body);showResult('pubPostResult',`✅ ${r.total_success}/${r.total_success+r.total_failed} nền tảng\n\n${r.results.map(x=>(x.success?'✅':'❌')+' '+x.platform+': '+(x.success?(x.platform_post_url||'Done'):x.error_message)).join('\n')}`);toast(`🚀 Đã đăng ${r.total_success} nền tảng!`)}catch(e){showResult('pubPostResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
+
+function renderCalendar(){const now=new Date(),y=now.getFullYear(),m=now.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0);let h=`<div style="font-weight:700;text-align:center;margin-bottom:8px">📅 Tháng ${m+1}/${y}</div><div class="calendar">`;['CN','T2','T3','T4','T5','T6','T7'].forEach(d=>h+=`<div class="cal-day-header">${d}</div>`);for(let i=0;i<first.getDay();i++)h+='<div></div>';for(let d=1;d<=last.getDate();d++){const today=d===now.getDate();h+=`<div class="cal-day${today?' today':''}">${d}</div>`}h+='</div>';document.getElementById('pubCalendar').innerHTML=h}
+
+// COMMUNITY
+async function analyzeComment(){const b=document.querySelector('#tab-community .btn-p');const pid=document.getElementById('cmtPersonaId').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const r=await api('POST','/community/analyze-comment',{persona_id:pid,comment_content:document.getElementById('cmtContent').value});showResult('cmtResult',`🔍 Sentiment: ${r.sentiment} (${Math.round(r.sentiment_score*100)}%)\n🎯 Action: ${r.action}\n💡 ${r.reason}\n\n${r.suggested_reply?'💬 Reply:\n'+r.suggested_reply:''}`);toast('✅ Đã phân tích!')}catch(e){showResult('cmtResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
+
+async function autoReply(){const b=document.querySelectorAll('#tab-community .btn-p')[1];const pid=document.getElementById('autoReplyPersonaId').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const lines=document.getElementById('autoReplyComments').value.split('\n').filter(l=>l.trim());const r=await api('POST','/community/auto-reply',{persona_id:pid,comments:lines.map((l,i)=>({id:'c'+i,content:l.trim(),commenter_name:'Follower'})),max_replies:50});showResult('autoReplyResult',`📊 ${r.total_comments} comments | 💬 ${r.replied} replied | ❤️ ${r.liked} liked | ⏭️ ${r.ignored} ignored\n\n${r.results.map(x=>`${x.action==='reply'?'💬':x.action==='like'?'❤️':'⏭️'} ${x.reply_text||'(liked)'}`).join('\n')}`);toast(`✅ ${r.replied} replies!`)}catch(e){showResult('autoReplyResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
+
+// TREND
+async function fetchTrends(){const b=document.querySelector('#tab-trend .btn-p');loading(b,1);try{const srcs=Array.from(document.querySelectorAll('#trendSources input:checked')).map(cb=>cb.value);const trends=await api('POST','/trends/fetch',{sources:srcs,count_per_source:10});document.getElementById('trendResult').innerHTML=trends.slice(0,15).map(t=>`<div class="trend-card"><div class="tsrc">${t.source.toUpperCase()} · ${t.category}</div><div class="ttitle">${t.hashtag?'#'+t.hashtag:t.title}</div><div class="tdesc">${t.description||''}</div><div class="score-bar"><div class="score-fill" style="width:${Math.min(100,t.popularity_score)}%;background:var(--grad2)"></div></div><div style="font-size:.7rem;color:var(--accent);margin-top:2px">Trend Score: ${t.popularity_score.toFixed(0)}</div></div>`).join('');toast(`🔥 ${trends.length} xu hướng!`)}catch(e){toast('❌ '+e.message,'err')}loading(b,0)}
+
+async function recommendTrends(){const b=document.querySelectorAll('#tab-trend .btn-p')[1];const pid=document.getElementById('trendPersonaId').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const k=document.getElementById('trendTopK').value;const r=await api('GET',`/trends/recommend/${pid}?top_k=${k}&use_ai=true`);document.getElementById('trendRecommendResult').innerHTML=`<p style="font-size:.82rem;color:var(--text2)">📊 ${r.total_trends_analyzed} trends → <strong>${r.persona_name}</strong></p>`+r.recommendations.map(rec=>`<div class="trend-card" style="border-left:3px solid var(--accent)"><div style="display:flex;justify-content:space-between"><span class="tsrc">${rec.trend.source} · ${rec.trend.category}</span><span style="font-size:.78rem;color:var(--accent);font-weight:700">Match ${Math.round(rec.relevance_score*100)}%</span></div><div class="ttitle">${rec.trend.title}</div><div style="margin-top:6px;padding:8px;background:var(--surface2);border-radius:6px;font-size:.8rem">${rec.suggested_caption}</div><div style="margin-top:4px;display:flex;gap:3px;flex-wrap:wrap">${rec.suggested_hashtags.map(h=>`<span class="tag" style="color:var(--accent)">#${h}</span>`).join('')}</div><div style="margin-top:2px;font-size:.7rem;color:var(--text2)">💡 ${rec.reasoning} · ${rec.content_type}</div></div>`).join('');toast(`🎯 ${r.recommendations.length} gợi ý!`)}catch(e){toast('❌ '+e.message,'err')}loading(b,0)}
+
+// SOCIAL INBOX
+async function loadInbox(){const pid=document.getElementById('inboxPersonaId').value;if(!pid)return;try{const msgs=await api('GET',`/community/comments/${pid}?limit=30`);const el=document.getElementById('inboxList');el.innerHTML=msgs.length?msgs.map(m=>`<div class="inbox-item ${m.replied?'':'new'}"><div class="inbox-avatar">${m.author_name.charAt(0)}</div><div class="inbox-info"><div class="inbox-from">${m.author_name} <span class="inbox-status ${m.replied?'replied':'new'}">${m.replied?'replied':'new'}</span></div><div class="inbox-preview">${m.content}</div>${m.reply_content?`<div class="inbox-preview" style="color:var(--primary)">↳ ${m.reply_content}</div>`:''}<div class="inbox-meta">${m.platform||'unknown'} · ${new Date(m.created_at).toLocaleDateString('vi')}</div></div></div>`).join(''):'<p style="color:var(--text2);text-align:center;padding:20px">Chưa có tin nhắn nào.</p>'}catch(e){}}
+
+function switchChatPersona(){const s=document.getElementById('chatPersonaSelect');activeChatPersonaId=s.value;if(activeChatPersonaId){const n=s.options[s.selectedIndex].text;document.getElementById('chatMessages').innerHTML=`<div class="chat-msg bot"><div class="sndr">${n}</div>👋 Chào bạn! Mình đây.</div>`}}
+
+async function sendChat(){const i=document.getElementById('chatInput'),m=i.value.trim();if(!m||!activeChatPersonaId)return toast('⚠️ Chọn persona','err');const mel=document.getElementById('chatMessages');mel.innerHTML+=`<div class="chat-msg user"><div class="sndr">Bạn</div>${m}</div>`;i.value='';mel.scrollTop=mel.scrollHeight;mel.innerHTML+=`<div class="chat-msg bot" id="cload"><div class="sndr">...</div>Đang nghĩ...</div>`;mel.scrollTop=mel.scrollHeight;try{const r=await api('POST','/chat',{persona_id:activeChatPersonaId,message:m,include_memories:!0,include_life_events:!0});document.getElementById('cload')?.remove();mel.innerHTML+=`<div class="chat-msg bot"><div class="sndr">${r.persona_name}</div>${r.message}</div>`;mel.scrollTop=mel.scrollHeight}catch(e){document.getElementById('cload')?.remove();mel.innerHTML+=`<div class="chat-msg bot" style="color:var(--red)">${e.message}</div>`}}
+
+document.addEventListener('DOMContentLoaded',async()=>{await loadPersonas();renderCalendar();setInterval(loadPersonas,30000)});
+
+async function deletePersona(id,name){if(!confirm(`🗑️ Xóa "${name}"?\n\nPersona này và toàn bộ dữ liệu liên quan (ký ức, bài đăng, story...) sẽ bị xóa vĩnh viễn.`))return;try{await api('DELETE',`/personas/${id}`);toast(`✅ Đã xóa "${name}"`);personasCache=personasCache.filter(p=>p.id!==id);renderPersonaList(personasCache);document.getElementById('statPersonas').textContent=personasCache.length}catch(e){toast('❌ Lỗi: '+e.message,'err')}}
+
+// EDIT PERSONA
+let editingPersonaId=null,editingPersonaData=null;
+async function editPersona(id){
+  // Load FULL persona data from API (cache chỉ có summary)
+  const b=document.querySelector('#editModal .btn-p');
+  loading(b,1);
+  let p;
+  try{
+    p=await api('GET',`/personas/${id}`);
+    editingPersonaId=id;
+    editingPersonaData=JSON.parse(JSON.stringify(p));
+    loading(b,0);
+  }catch(e){
+    loading(b,0);
+    toast('❌ Lỗi tải dữ liệu: '+e.message,'err');
+    return;
+  }
+
+  const fields=[
+    // Cột trái - thông tin cơ bản
+    {key:'name',label:'👤 Tên',type:'text',grp:'basic'},
+    {key:'nickname',label:'⭐ Biệt danh',type:'text',grp:'basic'},
+    {key:'age',label:'🎂 Tuổi',type:'number',grp:'basic'},
+    {key:'gender',label:'🚻 Giới tính',type:'select',opts:['','nữ','nam'],grp:'basic'},
+    {key:'occupation',label:'💼 Nghề nghiệp',type:'text',grp:'basic'},
+    {key:'location',label:'📍 Địa điểm',type:'text',grp:'basic'},
+    // Cột phải - AI sinh
+    {key:'concept_description',label:'📝 Concept',type:'textarea',grp:'ai'},
+    {key:'voice_style',label:'🎤 Giọng nói',type:'select',opts:['','dịu dàng','năng động','hài hước','trầm tính','quyến rũ'],grp:'ai'},
+    {key:'personality_type',label:'🎯 Tính cách',type:'select',opts:['','introvert','extrovert','ambivert'],grp:'ai'},
+    {key:'appearance',label:'💇 Ngoại hình',type:'textarea',fmt:v=>typeof v==='string'?v:[v?.description,v?.looks_like?`🌟 Giống: ${v.looks_like}`:''].filter(Boolean).join('\n')||'',grp:'ai'},
+    {key:'fashion_style',label:'👗 Thời trang',type:'textarea',grp:'ai'},
+    {key:'life_goals',label:'🎯 Mục tiêu cuộc đời',type:'textarea',fmt:v=>Array.isArray(v)?v.map(g=>`${g.goal||g.title||g} [${g.progress||0}%]`).join('\n'):v||'',grp:'ai'},
+    {key:'relationships',label:'💕 Mối quan hệ',type:'textarea',fmt:v=>Array.isArray(v)?v.map(r=>`${r.name||r} (${r.type||'friend'})`).join('\n'):v||'',grp:'ai'},
+    {key:'backstory',label:'📖 Câu chuyện',type:'textarea',grp:'ai'},
+    {key:'unique_appeal',label:'✨ Điểm thu hút',type:'textarea',grp:'ai'},
+    {key:'interests',label:'❤️ Sở thích (dấu phẩy)',type:'text',fmt:v=>Array.isArray(v)?v.join(', '):v||'',grp:'ai'},
+  ];
+  
+  const el=document.getElementById('editFields');
+  // Basic fields
+  let html='<div style="font-size:.8rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin:4px 0 8px">📋 Thông tin cơ bản</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+  fields.filter(f=>f.grp==='basic').forEach(f=>{
+    let val=f.fmt?f.fmt(p[f.key]):(p[f.key]??'');
+    html+=`<div><label style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:3px;display:block">${f.label}</label>${f.type==='select'?`<select id="ef_${f.key}" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:.8rem">${f.opts?.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o||'Tự do'}</option>`).join('')||''}</select>`:`<input id="ef_${f.key}" value="${val}" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:.8rem" ${f.type==='number'?'type="number"':''}></div>`}`});
+  html+='</div><div style="height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:12px 0"></div>';
+  // AI fields
+  html+='<div style="font-size:.8rem;font-weight:700;color:var(--pink);text-transform:uppercase;letter-spacing:.06em;margin:4px 0 8px">🤖 AI sinh</div>';
+  fields.filter(f=>f.grp==='ai').forEach(f=>{
+    let val=f.fmt?f.fmt(p[f.key]):(p[f.key]??'');
+    html+=`<div style="margin-bottom:6px"><div style="display:flex;align-items:center;justify-content:space-between"><label style="font-size:.72rem;font-weight:600;color:var(--text2)">${f.label}</label><button class="btn btn-s btn-sm" onclick="regenerateField('${f.key}')" title="Sinh lại bằng AI" style="padding:2px 6px;font-size:.65rem">🔄</button></div>${f.type==='select'?`<select id="ef_${f.key}" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:.8rem;margin-top:3px">${f.opts?.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o||'Tự do'}</option>`).join('')||''}</select>`:`<textarea id="ef_${f.key}" rows="${f.key==='life_goals'||f.key==='backstory'?'3':'2'}" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:.8rem;font-family:inherit;resize:vertical;margin-top:3px">${val}</textarea>`}</div>`;
+  });
+  el.innerHTML=html;
+  document.getElementById('editModal').style.display='flex';
+}
+
+function closeEditModal(){document.getElementById('editModal').style.display='none';editingPersonaId=null;editingPersonaData=null}
+
+async function saveEdit(){if(!editingPersonaId)return;const b=document.querySelector('#editModal .btn-p');loading(b,1);try{const body={};const allKeys=['name','nickname','age','gender','occupation','location','voice_style','personality_type','fashion_style','unique_appeal','interests','concept_description','backstory'];allKeys.forEach(k=>{const el=document.getElementById('ef_'+k);if(!el)return;let val=el.value;if(k==='age')val=parseInt(val)||null;if(k==='interests')val=val.split(',').map(s=>s.trim()).filter(Boolean);const old=editingPersonaData?.[k];const oldStr=Array.isArray(old)?old.join(', '):String(old||'');if(String(val)===oldStr.trim())return;body[k]=val||null});if(!Object.keys(body).length){closeEditModal();toast('ℹ️ Không có thay đổi');return}const r=await api('PATCH',`/personas/${editingPersonaId}`,body);toast('✅ Đã cập nhật!');closeEditModal();await loadPersonas()}catch(e){showResult('editResult','❌ Lỗi: '+e.message,1)}loading(b,0)}
+
+async function regenerateField(fieldKey){if(!editingPersonaId)return;toast(`🔄 Đang sinh lại ${fieldKey}...`);try{const r=await api('POST',`/personas/${editingPersonaId}/regenerate-field`,{field:fieldKey,context:editingPersonaData});if(r[fieldKey]){const el=document.getElementById('ef_'+fieldKey);if(el)el.value=r[fieldKey];toast(`✅ Đã sinh lại ${fieldKey}!`)}else toast('❌ Không sinh được','err')}catch(e){toast('❌ Lỗi: '+e.message,'err')}}
+</script>
+</body>
+</html>
