@@ -17,6 +17,7 @@ from app.schemas.persona import (
     PersonaSummary,
     PersonaUpdate,
     RegenerateFieldRequest,
+    RegenerateAvatarRequest,
 )
 from app.services.persona_service import PersonaService
 
@@ -157,10 +158,11 @@ async def regenerate_field(
 @router.post(
     "/{persona_id}/regenerate-avatar",
     summary="🖼️ Sinh lại ảnh avatar",
-    description="Sinh lại ảnh đại diện cho persona. Dùng prompt có sẵn hoặc tạo mới.",
+    description="Sinh lại ảnh đại diện cho persona. Có thể truyền ảnh tham chiếu mới để vẽ tương tự.",
 )
 async def regenerate_avatar(
     persona_id: str,
+    request: Optional[RegenerateAvatarRequest] = None,
     service: PersonaService = Depends(get_persona_service),
 ):
     """Sinh lại ảnh avatar cho persona."""
@@ -168,7 +170,8 @@ async def regenerate_avatar(
     if not persona:
         raise HTTPException(status_code=404, detail="Không tìm thấy persona")
     try:
-        result = await service.regenerate_avatar(persona)
+        ref_url = request.reference_image_url if request else None
+        result = await service.regenerate_avatar(persona, ref_url)
         return {"avatar_url": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi sinh avatar: {str(e)}")

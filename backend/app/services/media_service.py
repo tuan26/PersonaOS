@@ -80,7 +80,81 @@ class MediaService:
             "size": len(file_data),
         }
 
-    # ── Avatar Generation (DALL-E) ────────────────────────────────
+    @classmethod
+    async def analyze_reference_image(cls, image_url: str) -> dict[str, str]:
+        """
+        Phân tích ảnh tham chiếu bằng GPT-4o Vision để viết prompt DALL-E 3
+        và mô tả tiếng Việt đồng bộ với ngoại hình.
+        """
+        import base64
+        import mimetypes
+        import json
+        import logging
+        from app.core.llm import get_openai_client
+
+        try:
+            # 1. Lấy tên file từ URL (ví dụ: /media/reference/filename.ext)
+            filename = image_url.split("/")[-1]
+            file_path = cls.get_upload_path("reference", filename)
+
+            if not file_path.exists():
+                logging.warning(f"Không tìm thấy file ảnh tham chiếu tại {file_path}")
+                return {"prompt_en": "", "description_vi": ""}
+
+            # 2. Đọc file ảnh và mã hóa base64
+            image_bytes = file_path.read_bytes()
+            base64_image = base64.b64encode(image_bytes).decode("utf-8")
+
+            # Xác định mime type
+            mime_type, _ = mimetypes.guess_type(str(file_path))
+            if not mime_type:
+                mime_type = "image/png"
+
+            # 3. Gọi GPT-4o Vision để phân tích
+            client = get_openai_client()
+
+            system_prompt = (
+                "You are an expert AI Influencer designer. Analyze the uploaded reference image "
+                "and output a JSON object containing:\n"
+                "1. 'prompt_en': A highly detailed, professional prompt in English to generate a highly similar portrait "
+                "using OpenAI gpt-image-2 model. Include details like: portrait shot, approximate age, gender (must match the person in the image), "
+                "facial features, expression, hairstyle, lighting (e.g. soft studio lighting), clothing style, background, "
+                "and camera style (e.g., 85mm lens, depth of field, photorealistic, fashion photography). DO NOT mention "
+                "names of specific real people. Focus on visual description. The prompt should be very long and detailed (at least 500 words).\n"
+                "2. 'description_vi': A detailed description of this person's appearance in Vietnamese (about 4-6 sentences) "
+                "describing hair, face, expression, clothing style, style of photo.\n"
+                "Ensure the output is valid JSON format like: {\"prompt_en\": \"...\", \"description_vi\": \"...\"}."
+            )
+
+            response = await client.chat.completions.create(
+                model=settings.OPENAI_MODEL,  # gpt-4o
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "Hãy phân tích bức ảnh này để tạo prompt sinh ảnh tương tự và mô tả ngoại hình nhân vật."},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:{mime_type};base64,{base64_image}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.4,
+                max_tokens=1000
+            )
+
+            content = response.choices[0].message.content or "{}"
+            return json.loads(content)
+        except Exception as e:
+            logging.error(f"Lỗi khi phân tích ảnh tham chiếu bằng Vision: {e}")
+            return {"prompt_en": "", "description_vi": ""}
+
+    # ── Avatar Generation (GPT Image) ────────────────────────────────
 
     @classmethod
     async def generate_avatar(
@@ -94,31 +168,33 @@ class MediaService:
         persona_style: str = "",
     ) -> dict[str, Any]:
         """
-        Generate an avatar image.
+        Generate an avatar image using OpenAI's latest image models.
 
-        Strategy:
-        1. GPT Image models (gpt-image-1, gpt-image-2) — OpenAI mới
-        2. DALL-E 3 / DALL-E 2 (legacy, nếu API key có quyền)
-        3. DiceBear SVG (luôn hoạt động, miễn phí)
+        Strategy (June 2026):
+        1. gpt-image-2 — flagship model, best quality & photorealism
+        2. gpt-image-1 — fallback if gpt-image-2 unavailable
+        3. DiceBear SVG — free fallback (always works)
+
+        Note: DALL-E 2 & DALL-E 3 were retired by OpenAI on May 12, 2026.
         """
         import logging
         import hashlib
         import base64
 
-        # ── 1. Try GPT Image models (OpenAI mới) ─────────────────
-        for img_model in ["gpt-image-1.5", "gpt-image-2", "gpt-image-1", "gpt-image-1-mini"]:
+        # ── 1. Try GPT Image models (gpt-image-2 → gpt-image-1) ──
+        for img_model in ["gpt-image-2", "gpt-image-1"]:
             try:
                 client = get_openai_client()
                 response = await client.images.generate(
                     model=img_model,
-                    prompt=prompt[:4000],
+                    prompt=prompt[:32000],
                     n=1,
-                    size=size if img_model in ("gpt-image-1", "gpt-image-2") else "1024x1024",
+                    size=size,
                 )
                 image_data = response.data[0]
                 revised_prompt = getattr(image_data, 'revised_prompt', prompt)
 
-                # GPT Image models return b64_json instead of url
+                # GPT Image models return b64_json
                 if getattr(image_data, 'b64_json', None):
                     img_bytes = base64.b64decode(image_data.b64_json)
                     saved = await cls.save_upload(
@@ -126,13 +202,18 @@ class MediaService:
                         original_filename=f"avatar_{uuid.uuid4().hex[:8]}.png",
                         subfolder="avatars",
                     )
-                    return {"url": saved["url"], "local_path": saved["path"], "revised_prompt": revised_prompt, "source": img_model}
+                    return {
+                        "url": saved["url"],
+                        "local_path": saved["path"],
+                        "revised_prompt": revised_prompt,
+                        "source": img_model,
+                    }
 
-                # Fallback: traditional url
-                image_url = image_data.url
+                # Fallback: if model returns url instead of b64
+                image_url = getattr(image_data, 'url', None)
                 if image_url:
                     import httpx
-                    async with httpx.AsyncClient() as http:
+                    async with httpx.AsyncClient(timeout=60) as http:
                         img_resp = await http.get(image_url)
                         if img_resp.status_code == 200:
                             saved = await cls.save_upload(
@@ -140,47 +221,24 @@ class MediaService:
                                 original_filename=f"avatar_{uuid.uuid4().hex[:8]}.png",
                                 subfolder="avatars",
                             )
-                            return {"url": saved["url"], "local_path": saved["path"], "revised_prompt": revised_prompt, "source_url": image_url, "source": img_model}
-                    return {"url": image_url, "revised_prompt": revised_prompt, "source_url": image_url, "source": img_model}
+                            return {
+                                "url": saved["url"],
+                                "local_path": saved["path"],
+                                "revised_prompt": revised_prompt,
+                                "source_url": image_url,
+                                "source": img_model,
+                            }
+                    return {"url": image_url, "revised_prompt": revised_prompt, "source": img_model}
+
+                logging.warning(f"{img_model}: response có data nhưng không có b64_json hoặc url")
             except Exception as e:
-                err_msg = str(e)[:100]
+                err_msg = str(e)[:200]
                 logging.warning(f"{img_model} unavailable: {err_msg}")
                 if "401" in err_msg or "403" in err_msg:
-                    break
+                    break  # Auth issue — skip all models
                 continue
 
-        # ── 2. Try legacy DALL-E ─────────────────────────────────
-        for dalle_model in ["dall-e-3", "dall-e-2"]:
-            try:
-                client = get_openai_client()
-                img_size = size if dalle_model == "dall-e-3" else "512x512"
-                response = await client.images.generate(
-                    model=dalle_model,
-                    prompt=prompt[:4000],
-                    size=img_size,
-                    quality=quality if dalle_model == "dall-e-3" else "standard",
-                    n=1,
-                )
-                image_url = response.data[0].url
-                revised_prompt = response.data[0].revised_prompt
-
-                import httpx
-                async with httpx.AsyncClient() as http:
-                    img_resp = await http.get(image_url)
-                    if img_resp.status_code == 200:
-                        saved = await cls.save_upload(
-                            file_data=img_resp.content,
-                            original_filename=f"avatar_{uuid.uuid4().hex[:8]}.png",
-                            subfolder="avatars",
-                        )
-                        return {"url": saved["url"], "local_path": saved["path"], "revised_prompt": revised_prompt, "source_url": image_url, "source": dalle_model}
-
-                return {"url": image_url, "revised_prompt": revised_prompt, "source_url": image_url, "source": dalle_model}
-            except Exception as e:
-                logging.warning(f"{dalle_model} unavailable: {str(e)[:80]}")
-                continue
-
-        # ── 3. DiceBear với thông tin cá nhân hóa ────────────────
+        # ── 2. DiceBear với thông tin cá nhân hóa (Fallback miễn phí) ──
         seed_str = f"{persona_name}_{persona_gender}_{persona_age}_{prompt[:50]}"
         seed = hashlib.md5(seed_str.encode()).hexdigest()
 
@@ -199,7 +257,7 @@ class MediaService:
 
         avatar_url = f"https://api.dicebear.com/9.x/{dicebear_style}/svg?seed={seed}&gender={gender_param}"
         logging.info(f"DiceBear avatar: {avatar_url[:80]}...")
-        return {"url": avatar_url, "revised_prompt": prompt, "source_url": avatar_url, "source": "dicebear", "note": "API key không có quyền tạo ảnh. Avatar từ DiceBear (SVG)."}
+        return {"url": avatar_url, "revised_prompt": prompt, "source_url": avatar_url, "source": "dicebear", "note": "Không sinh được ảnh bằng GPT Image (vui lòng kiểm tra số dư tài khoản OpenAI). Sử dụng DiceBear làm ảnh thay thế."}
 
     @classmethod
     async def generate_avatar_lite(cls, prompt: str) -> dict[str, Any]:

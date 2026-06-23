@@ -40,6 +40,27 @@ class PersonaService:
                 "Lấy key tại: https://platform.openai.com/api-keys"
             )
 
+        # ── Vision Analysis on Reference Image ────────────────────
+        ref_image_prompt_en = ""
+        ref_image_desc_vi = ""
+        if request.reference_image_urls:
+            try:
+                from app.services.media_service import MediaService
+                first_ref = request.reference_image_urls[0]
+                analysis = await MediaService.analyze_reference_image(first_ref)
+                ref_image_prompt_en = analysis.get("prompt_en", "")
+                ref_image_desc_vi = analysis.get("description_vi", "")
+                
+                # Update appearance hint for PersonaEngine
+                if ref_image_desc_vi:
+                    if request.appearance_hint:
+                        request.appearance_hint = f"{request.appearance_hint}. Ngoại hình thực tế: {ref_image_desc_vi}"
+                    else:
+                        request.appearance_hint = ref_image_desc_vi
+            except Exception as e:
+                import logging
+                logging.warning(f"Không thể phân tích ảnh tham chiếu bằng Vision: {e}")
+
         # 1. Generate persona data via LLM
         generated = await PersonaEngine.generate(
             concept=request.concept,
@@ -65,6 +86,10 @@ class PersonaService:
 
         # 2. Convert to DB-ready dict
         persona_dict = PersonaEngine.to_persona_dict(generated)
+
+        # Use the DALL-E prompt analyzed from reference image if available
+        if ref_image_prompt_en:
+            persona_dict["avatar_gen_prompt"] = ref_image_prompt_en
 
         # 2b. Merge uploaded reference images
         if request.reference_image_urls:
@@ -242,9 +267,35 @@ Thông tin hiện tại:
         result_text = result_text.strip().strip('"').strip("'").strip('"')
         return {field: result_text}
 
-    async def regenerate_avatar(self, persona: Persona) -> str:
+    async def regenerate_avatar(self, persona: Persona, reference_image_url: Optional[str] = None) -> str:
         """Regenerate avatar using AI, return URL."""
         from app.services.media_service import MediaService
+
+        # ── Phân tích ảnh tham chiếu mới bằng Vision nếu có ──
+        if reference_image_url:
+            try:
+                analysis = await MediaService.analyze_reference_image(reference_image_url)
+                prompt_en = analysis.get("prompt_en")
+                desc_vi = analysis.get("description_vi")
+
+                if prompt_en:
+                    persona.avatar_gen_prompt = prompt_en
+
+                # Cập nhật thông tin ngoại hình
+                app_data = dict(persona.appearance or {})
+                if desc_vi:
+                    app_data["description"] = desc_vi
+
+                # Thêm ảnh tham chiếu mới vào danh sách
+                refs = app_data.get("reference_images", [])
+                if reference_image_url not in refs:
+                    refs.append(reference_image_url)
+                app_data["reference_images"] = refs
+
+                persona.appearance = app_data
+            except Exception as e:
+                import logging
+                logging.warning(f"Lỗi phân tích ảnh tham chiếu mới trong regenerate_avatar: {e}")
 
         prompt = persona.avatar_gen_prompt or f"Portrait of a {persona.age}-year-old Vietnamese {persona.gender or 'person'}, {persona.occupation or 'modern professional'}, fashion style"
 

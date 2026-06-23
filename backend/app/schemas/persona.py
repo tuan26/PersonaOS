@@ -88,6 +88,11 @@ class RegenerateFieldRequest(BaseModel):
     context: Optional[dict[str, Any]] = Field(default=None, description="Context hiện tại của persona để AI giữ consistency")
 
 
+class RegenerateAvatarRequest(BaseModel):
+    """Request to regenerate avatar using AI, optionally with a new reference image."""
+    reference_image_url: Optional[str] = Field(default=None, description="URL ảnh tham chiếu mới đã upload để làm mẫu vẽ avatar")
+
+
 # ── Response Schemas ─────────────────────────────────────────────
 
 class PersonaResponse(BaseModel):

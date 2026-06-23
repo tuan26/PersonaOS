@@ -64,15 +64,15 @@ async def get_image(subfolder: str, filename: str):
 
 @router.post(
     "/generate-avatar",
-    summary="🤖 Sinh ảnh avatar bằng AI (DALL-E)",
-    description="Dùng DALL-E sinh ảnh chân dung nhân vật dựa trên prompt.",
+    summary="🤖 Sinh ảnh avatar bằng AI (GPT Image)",
+    description="Dùng GPT Image sinh ảnh chân dung nhân vật dựa trên prompt.",
 )
 async def generate_avatar(
     prompt: str = Query(..., description="Prompt tiếng Anh mô tả avatar"),
     size: str = Query("1024x1024", description="1024x1024 | 512x512 | 256x256"),
     quality: str = Query("standard", description="standard | hd"),
 ):
-    """Sinh ảnh avatar bằng DALL-E."""
+    """Sinh ảnh avatar bằng GPT Image."""
     try:
         result = await MediaService.generate_avatar(
             prompt=prompt,

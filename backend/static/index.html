@@ -681,7 +681,7 @@ txt+=`🖼️ **Prompt sinh avatar:**\n${p.avatar_gen_prompt||'Chưa có'}`;
 let html=txt.replace(/\n/g,'<br>');
 if(p.avatar_url){
   const fullUrl = p.avatar_url.startsWith('http')?p.avatar_url:window.location.origin+p.avatar_url;
-  html=`<div style="text-align:center;margin-bottom:12px"><img src="${fullUrl}" style="max-width:200px;border-radius:50%;border:3px solid var(--primary)" onerror="this.parentElement.innerHTML='<div style=paddding:20px;font-size:.85rem;color:var(--text2)'>⚠️ Avatar chưa được sinh (cần cấu hình OpenAI DALL-E)</div>'"><p style="font-size:.75rem;color:var(--accent);margin-top:4px">🤖 Avatar (DALL-E)</p></div>`+html
+  html=`<div style="text-align:center;margin-bottom:12px"><img src="${fullUrl}" style="max-width:200px;border-radius:50%;border:3px solid var(--primary)" onerror="this.parentElement.innerHTML='<div style=paddding:20px;font-size:.85rem;color:var(--text2)'>⚠️ Avatar chưa được sinh (cần cấu hình OpenAI API Key)</div>'"><p style="font-size:.75rem;color:var(--accent);margin-top:4px">🤖 Avatar (AI)</p></div>`+html
 }
 showResult('genResult',html,!1,!0);toast('✅ '+p.name+' đã được tạo!');await loadPersonas();uploadedRefUrls=[];document.getElementById('refImagesPreview').innerHTML=''}catch(e){showResult('genResult','❌ Lỗi: '+e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
 
@@ -774,8 +774,26 @@ async function editPersona(id){
   ];
   
   const el=document.getElementById('editFields');
-  // Basic fields
-  let html='<div style="font-size:.8rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin:4px 0 8px">📋 Thông tin cơ bản</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+  // Khối tải lên ảnh tham chiếu mới để sinh lại avatar
+  let html=`
+  <div style="display:flex;align-items:center;gap:16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px">
+    <div style="position:relative;width:60px;height:60px;border-radius:50%;overflow:hidden;border:2px solid var(--primary);flex-shrink:0">
+      <img id="editAvatarPreview" src="${p.avatar_url || 'https://api.dicebear.com/9.x/avataaars/svg'}" style="width:100%;height:100%;object-fit:cover" onerror="this.src='https://api.dicebear.com/9.x/avataaars/svg'">
+      <div id="avatarSpin" class="spinner" style="display:none;position:absolute;inset:0;margin:auto;border-color:var(--primary);width:20px;height:20px;border-width:2px"></div>
+    </div>
+    <div style="flex:1">
+      <div style="font-size:.8rem;font-weight:600;color:var(--text)">🖼️ Thay đổi Avatar từ ảnh tham chiếu</div>
+      <div style="font-size:.68rem;color:var(--text2);margin:2px 0 6px">AI sẽ phân tích ảnh tham chiếu mới để vẽ lại chân dung tương tự.</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="file" id="editAvatarFile" accept="image/*" style="display:none" onchange="uploadAndRegenAvatar()">
+        <button class="btn btn-s btn-sm" onclick="document.getElementById('editAvatarFile').click()" style="padding:4px 8px;font-size:.7rem">📤 Chọn ảnh & Tạo lại</button>
+        <span id="uploadStatus" style="font-size:.68rem;color:var(--accent)"></span>
+      </div>
+    </div>
+  </div>
+  `;
+
+  html+='<div style="font-size:.8rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin:4px 0 8px">📋 Thông tin cơ bản</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
   fields.filter(f=>f.grp==='basic').forEach(f=>{
     let val=f.fmt?f.fmt(p[f.key]):(p[f.key]??'');
     html+=`<div><label style="font-size:.72rem;font-weight:600;color:var(--text2);margin-bottom:3px;display:block">${f.label}</label>${f.type==='select'?`<select id="ef_${f.key}" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:.8rem">${f.opts?.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o||'Tự do'}</option>`).join('')||''}</select>`:`<input id="ef_${f.key}" value="${val}" style="width:100%;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:.8rem" ${f.type==='number'?'type="number"':''}></div>`}`});
@@ -795,6 +813,8 @@ function closeEditModal(){document.getElementById('editModal').style.display='no
 async function saveEdit(){if(!editingPersonaId)return;const b=document.querySelector('#editModal .btn-p');loading(b,1);try{const body={};const allKeys=['name','nickname','age','gender','occupation','location','voice_style','personality_type','fashion_style','unique_appeal','interests','concept_description','backstory'];allKeys.forEach(k=>{const el=document.getElementById('ef_'+k);if(!el)return;let val=el.value;if(k==='age')val=parseInt(val)||null;if(k==='interests')val=val.split(',').map(s=>s.trim()).filter(Boolean);const old=editingPersonaData?.[k];const oldStr=Array.isArray(old)?old.join(', '):String(old||'');if(String(val)===oldStr.trim())return;body[k]=val||null});if(!Object.keys(body).length){closeEditModal();toast('ℹ️ Không có thay đổi');return}const r=await api('PATCH',`/personas/${editingPersonaId}`,body);toast('✅ Đã cập nhật!');closeEditModal();await loadPersonas()}catch(e){showResult('editResult','❌ Lỗi: '+e.message,1)}loading(b,0)}
 
 async function regenerateField(fieldKey){if(!editingPersonaId)return;toast(`🔄 Đang sinh lại ${fieldKey}...`);try{const r=await api('POST',`/personas/${editingPersonaId}/regenerate-field`,{field:fieldKey,context:editingPersonaData});if(r[fieldKey]){const el=document.getElementById('ef_'+fieldKey);if(el)el.value=r[fieldKey];toast(`✅ Đã sinh lại ${fieldKey}!`)}else toast('❌ Không sinh được','err')}catch(e){toast('❌ Lỗi: '+e.message,'err')}}
+
+async function uploadAndRegenAvatar(){const fi=document.getElementById('editAvatarFile'),status=document.getElementById('uploadStatus'),preview=document.getElementById('editAvatarPreview'),spin=document.getElementById('avatarSpin');if(!fi.files||!fi.files[0])return;const f=fi.files[0];status.textContent='⏳ Đang tải ảnh...';if(spin)spin.style.display='block';try{const fd=new FormData();fd.append('file',f);const upRes=await fetch(`${A}/media/upload?subfolder=reference`,{method:'POST',body:fd});if(!upRes.ok){const err=await upRes.json();throw new Error(err.detail||'Không thể tải ảnh lên')};const upData=await upRes.json();status.textContent='🧠 AI đang vẽ lại avatar...';const rgRes=await fetch(`${A}/personas/${editingPersonaId}/regenerate-avatar`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reference_image_url:upData.url})});if(!rgRes.ok){const err=await rgRes.json();throw new Error(err.detail||'Lỗi sinh avatar')};const rgData=await rgRes.json();preview.src=rgData.avatar_url+'?t='+new Date().getTime();status.textContent='✅ Thành công!';toast('✅ Đã vẽ lại avatar mới!');if(editingPersonaData)editingPersonaData.avatar_url=rgData.avatar_url;await loadPersonas()}catch(e){status.textContent='❌ Lỗi: '+e.message;toast('❌ Lỗi: '+e.message,'err')}finally{if(spin)spin.style.display='none';fi.value=''}}
 </script>
 </body>
 </html>
