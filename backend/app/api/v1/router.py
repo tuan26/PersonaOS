@@ -17,6 +17,7 @@ from app.api.v1.community import router as community_router
 from app.api.v1.trend import router as trend_router
 from app.api.v1.media import router as media_router
 from app.api.v1.automation import router as automation_router
+from app.api.v1.monetization import router as monetization_router
 
 # ── v1 Main Router ───────────────────────────────────────────────
 v1_router = APIRouter(prefix="/api/v1")
@@ -50,6 +51,9 @@ v1_router.include_router(media_router, tags=["Media"])
 
 # Automation (scheduler + engagement insights)
 v1_router.include_router(automation_router, tags=["Automation"])
+
+# Phase 7: Monetization Engine
+v1_router.include_router(monetization_router, tags=["Monetization"])
 
 # ── Future phases (uncomment as implemented) ────────────────────
 # from app.api.v1.monetization import router as monetization_router
