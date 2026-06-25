@@ -44,6 +44,14 @@ class StoryService:
         if not persona:
             raise ValueError(f"Persona not found: {persona_id}")
 
+        # 0. Deactivate previous active stories — only one "current" story at a time
+        from sqlalchemy import update
+        await self.db.execute(
+            update(Story)
+            .where(Story.persona_id == persona_id, Story.is_active == True)  # noqa: E712
+            .values(is_active=False)
+        )
+
         # 1. Generate story via LLM
         story_data = await StoryEngine.generate_story(
             persona=persona,
