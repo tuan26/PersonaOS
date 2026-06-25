@@ -579,6 +579,7 @@ function togglePersonaOpts(){const o=document.getElementById('pExtraOpts'),a=doc
 function fillPrompt(t){document.getElementById('genConcept').value=t;document.getElementById('genConcept').focus()}
 function toast(m,t='ok'){const c=document.getElementById('toastContainer'),e=document.createElement('div');e.className=`toast ${t}`;e.textContent=m;c.appendChild(e);setTimeout(()=>{e.style.opacity='0';e.style.transition='opacity .3s';setTimeout(()=>e.remove(),300)},3500)}
 function showResult(id,d,er=!1,isHtml=!1){const el=document.getElementById(id);if(isHtml){el.innerHTML=d}else{el.textContent=typeof d==='string'?d:JSON.stringify(d,null,2)};el.className='result show '+(er?'err':'ok')}
+function zoomImg(src,ev){if(ev){ev.stopPropagation()}if(!src)return;let o=document.getElementById('imgLightbox');if(!o){o=document.createElement('div');o.id='imgLightbox';o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:99999;cursor:zoom-out;padding:24px';o.onclick=()=>{o.style.display='none'};o.innerHTML='<img style="max-width:92vw;max-height:92vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.6)">';document.body.appendChild(o);document.addEventListener('keydown',e=>{if(e.key==='Escape'&&o)o.style.display='none'})}o.querySelector('img').src=src;o.style.display='flex'}
 function loading(b,l){if(l){b.classList.add('loading');b.disabled=!0}else{b.classList.remove('loading');b.disabled=!1}}
 async function api(m,p,b=null){const o={method:m,headers:{'Content-Type':'application/json'}};if(b)o.body=JSON.stringify(b);const r=await fetch(A+p,o);if(r.status===204)return null;const d=await r.json();if(!r.ok)throw new Error(d.detail||'Lỗi '+r.status);return d}
 
@@ -588,7 +589,7 @@ function renderPersonaList(ps){const el=document.getElementById('personaList');i
 el.innerHTML=ps.map(p=>{
   const av=p.avatar_url?(p.avatar_url.startsWith('http')?p.avatar_url:window.location.origin+p.avatar_url):null;
   return `<div class="pcard">
-<div class="pavatar" ${av?'style="background:none;overflow:hidden"':''}>${av?`<img src="${av}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\'${p.name.charAt(0)}\';this.parentElement.style.background=\'var(--grad1)\'">`:p.name.charAt(0)}</div>
+<div class="pavatar" ${av?'style="background:none;overflow:hidden"':''}>${av?`<img src="${av}" onclick="zoomImg(this.src,event)" title="Click để phóng to" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in" onerror="this.parentElement.innerHTML=\'${p.name.charAt(0)}\';this.parentElement.style.background=\'var(--grad1)\'">`:p.name.charAt(0)}</div>
 <div class="pinfo" onclick="editPersona('${p.id}')" style="cursor:pointer">
 <div class="name">${p.name} ${p.nickname?`<span style="color:var(--star)">"${p.nickname}"</span>`:''}</div>
 <div class="p-meta-row"><span>${p.age}t</span>·<span>${p.occupation||'?'}</span>·<span>${p.location||'VN'}</span>·<span>${p.personality_type||'ambivert'}</span></div>
@@ -681,7 +682,7 @@ txt+=`🖼️ **Prompt sinh avatar:**\n${p.avatar_gen_prompt||'Chưa có'}`;
 let html=txt.replace(/\n/g,'<br>');
 if(p.avatar_url){
   const fullUrl = p.avatar_url.startsWith('http')?p.avatar_url:window.location.origin+p.avatar_url;
-  html=`<div style="text-align:center;margin-bottom:12px"><img src="${fullUrl}" style="max-width:200px;border-radius:50%;border:3px solid var(--primary)" onerror="this.parentElement.innerHTML='<div style=paddding:20px;font-size:.85rem;color:var(--text2)'>⚠️ Avatar chưa được sinh (cần cấu hình OpenAI API Key)</div>'"><p style="font-size:.75rem;color:var(--accent);margin-top:4px">🤖 Avatar (AI)</p></div>`+html
+  html=`<div style="text-align:center;margin-bottom:12px"><img src="${fullUrl}" onclick="zoomImg(this.src,event)" title="Click để phóng to" style="max-width:200px;border-radius:50%;border:3px solid var(--primary);cursor:zoom-in" onerror="this.parentElement.innerHTML='<div style=paddding:20px;font-size:.85rem;color:var(--text2)'>⚠️ Avatar chưa được sinh (cần cấu hình OpenAI API Key)</div>'"><p style="font-size:.75rem;color:var(--accent);margin-top:4px">🤖 Avatar (AI)</p></div>`+html
 }
 showResult('genResult',html,!1,!0);toast('✅ '+p.name+' đã được tạo!');await loadPersonas();uploadedRefUrls=[];document.getElementById('refImagesPreview').innerHTML=''}catch(e){showResult('genResult','❌ Lỗi: '+e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
 
@@ -778,7 +779,7 @@ async function editPersona(id){
   let html=`
   <div style="display:flex;align-items:center;gap:16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px">
     <div style="position:relative;width:60px;height:60px;border-radius:50%;overflow:hidden;border:2px solid var(--primary);flex-shrink:0">
-      <img id="editAvatarPreview" src="${p.avatar_url || 'https://api.dicebear.com/9.x/avataaars/svg'}" style="width:100%;height:100%;object-fit:cover" onerror="this.src='https://api.dicebear.com/9.x/avataaars/svg'">
+      <img id="editAvatarPreview" src="${p.avatar_url || 'https://api.dicebear.com/9.x/avataaars/svg'}" onclick="zoomImg(this.src,event)" title="Click để phóng to" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in" onerror="this.src='https://api.dicebear.com/9.x/avataaars/svg'">
       <div id="avatarSpin" class="spinner" style="display:none;position:absolute;inset:0;margin:auto;border-color:var(--primary);width:20px;height:20px;border-width:2px"></div>
     </div>
     <div style="flex:1">
