@@ -188,6 +188,12 @@ class PersonaService:
             return False
         await self.db.delete(persona)
         await self.db.flush()
+        # Clean up semantic memory vectors (best-effort)
+        try:
+            from app.core.vector_store import VectorStore
+            await VectorStore.delete_persona(persona_id)
+        except Exception:
+            pass
         return True
 
     async def count(self) -> int:

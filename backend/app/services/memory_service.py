@@ -12,6 +12,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.vector_store import VectorStore
 from app.engine.memory_engine import MemoryEngine
 from app.models.memory import LifeEvent, Memory
 
@@ -50,7 +51,55 @@ class MemoryService:
         self.db.add(memory)
         await self.db.flush()
         await self.db.refresh(memory)
+
+        # Embed into the semantic store (best-effort — never break on failure)
+        try:
+            ok = await VectorStore.add_memory(
+                memory_id=memory.id,
+                persona_id=persona_id,
+                text=(f"{title}. {content}" if title else content),
+                metadata={
+                    "memory_type": memory_type,
+                    "memory_category": memory.memory_category,
+                    "title": title or "",
+                    "importance": importance,
+                    "occurred_at": memory.occurred_at.isoformat()
+                    if memory.occurred_at else "",
+                },
+            )
+            if ok and not memory.embedding_id:
+                memory.embedding_id = memory.id
+                await self.db.flush()
+        except Exception:
+            pass
+
         return memory
+
+    async def search_memories(
+        self,
+        persona_id: str,
+        query: str,
+        limit: int = 6,
+    ) -> list[dict[str, Any]]:
+        """
+        Semantically retrieve the memories most relevant to `query`.
+
+        Returns a list of plain dicts (content + metadata), suitable for
+        injecting into prompts. Returns [] if the vector store is unavailable
+        (callers should fall back to get_recent_memories).
+        """
+        hits = await VectorStore.search(persona_id, query, n_results=limit)
+        results: list[dict[str, Any]] = []
+        for h in hits:
+            meta = h.get("metadata") or {}
+            results.append({
+                "content": h.get("content", ""),
+                "memory_type": meta.get("memory_type", ""),
+                "occurred_at": meta.get("occurred_at", ""),
+                "importance": meta.get("importance", 0.5),
+                "relevance": h.get("distance"),
+            })
+        return results
 
     async def get_recent_memories(
         self,

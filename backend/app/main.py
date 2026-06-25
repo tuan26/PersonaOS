@@ -35,8 +35,12 @@ async def lifespan(app: FastAPI):
     settings.MEDIA_DIR.mkdir(parents=True, exist_ok=True)
     await init_db()
     print("[OK] Database initialized")
+    # Start the in-app scheduler (auto content generation)
+    from app.core.scheduler import start_scheduler, shutdown_scheduler
+    start_scheduler()
     yield
     # Shutdown
+    shutdown_scheduler()
     print("[STOP] Shutting down...")
 
 

@@ -11,6 +11,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.engine.analytics_engine import AnalyticsEngine
 from app.engine.content_engine import ContentEngine
 from app.models.content import ContentPost, ContentSchedule
 
@@ -116,6 +117,81 @@ class ContentService:
         for p in posts:
             await self.db.refresh(p)
         return posts
+
+    # ── Analytics / Feedback Loop ────────────────────────────────
+
+    async def get_insights(self, persona_id: str) -> dict[str, Any]:
+        """
+        Analyze this persona's past posts and return engagement insights +
+        recommendations (content mix, best times, top hashtags).
+        """
+        result = await self.db.execute(
+            select(ContentPost)
+            .where(ContentPost.persona_id == persona_id)
+            .order_by(ContentPost.created_at.desc())
+            .limit(200)
+        )
+        posts = list(result.scalars().all())
+        return AnalyticsEngine.analyze(posts)
+
+    @staticmethod
+    def _mix_to_types(mix: dict[str, int], count: int) -> list[str]:
+        """Expand a content-mix percentage dict into a list of N content types."""
+        types: list[str] = []
+        for ct, pct in sorted(mix.items(), key=lambda x: x[1], reverse=True):
+            n = max(0, round(count * pct / 100))
+            types.extend([ct] * n)
+        if not types:
+            types = ["caption"]
+        # pad/trim to exactly `count`
+        while len(types) < count:
+            types.append(types[len(types) % len(types)] if types else "caption")
+        return types[:count]
+
+    async def generate_optimized_batch(
+        self,
+        persona: Any,
+        count: int = 3,
+        memories: list[Any] | None = None,
+        life_events: list[Any] | None = None,
+        creativity: float = 0.8,
+    ) -> tuple[list[ContentPost], dict[str, Any]]:
+        """
+        Generate a batch biased by what has performed best for this persona.
+        Returns (posts, insights). Used by the scheduler.
+        """
+        insights = await self.get_insights(persona.id)
+        types = self._mix_to_types(insights["recommended_mix"], count)
+
+        posts: list[ContentPost] = []
+        for ct in types:
+            content_data = await ContentEngine.generate_caption(
+                persona=persona,
+                content_type=ct,
+                topic_hint="",
+                memories=memories,
+                life_events=life_events,
+                creativity=creativity,
+            )
+            post = ContentPost(
+                persona_id=persona.id,
+                content_type=ct,
+                caption=content_data["caption"],
+                hashtags=content_data.get("hashtags", []),
+                generation_context={
+                    "auto": True,
+                    "optimized": insights["learning"],
+                    "mood": content_data.get("mood"),
+                },
+                status="draft",
+            )
+            self.db.add(post)
+            posts.append(post)
+
+        await self.db.flush()
+        for p in posts:
+            await self.db.refresh(p)
+        return posts, insights
 
     # ── Content CRUD ─────────────────────────────────────────────
 

@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o"           # Model chính: Persona, Story, Chat
     OPENAI_MODEL_LITE: str = "gpt-4o-mini" # Model nhẹ: Comment, Caption, Trend...
+    OPENAI_EMBED_MODEL: str = "text-embedding-3-small"  # Embedding cho semantic memory
     OPENAI_BASE_URL: Optional[str] = None  # For custom endpoints (Azure, proxies, etc.)
 
     # ── Vector Database (for Memory Engine) ──────────────────────
@@ -48,6 +49,13 @@ class Settings(BaseSettings):
     # ── Content Storage ──────────────────────────────────────────
     MEDIA_DIR: Path = BASE_DIR / "data" / "media"
     CONTENT_SCHEDULE_INTERVAL_HOURS: int = 6
+
+    # ── Scheduler (Auto content generation) ──────────────────────
+    SCHEDULER_ENABLED: bool = True       # Run the in-app APScheduler
+    SCHEDULER_DAILY_HOUR: int = 9        # Hour (0-23) to run the daily content job
+    SCHEDULER_POSTS_PER_RUN: int = 3     # Posts generated per persona per run
+    AUTO_PUBLISH_ENABLED: bool = False   # False = save as draft for review (default)
+    #                                      True  = publish to connected accounts
 
     # ── Community Engine ─────────────────────────────────────────
     AUTO_REPLY_ENABLED: bool = False

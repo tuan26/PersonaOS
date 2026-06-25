@@ -49,15 +49,43 @@ class ChatService:
             raise ValueError(f"Persona not found: {persona_id}")
 
         # 2. Gather context
-        memories = []
+        memories: list[dict] = []
         life_events = []
+        semantic_count = 0
 
         if include_memories:
-            memories = await self.memory_service.get_recent_memories(
+            # 2a. Semantic recall — memories relevant to THIS message
+            semantic = await self.memory_service.search_memories(
                 persona_id=persona_id,
-                limit=15,
+                query=message,
+                limit=6,
+            )
+            semantic_count = len(semantic)
+
+            # 2b. Recent memories (recency) — converted to dicts
+            recent = await self.memory_service.get_recent_memories(
+                persona_id=persona_id,
+                limit=10,
                 min_importance=0.2,
             )
+            recent_dicts = [
+                {
+                    "content": m.content,
+                    "memory_type": m.memory_type,
+                    "occurred_at": m.occurred_at,
+                    "importance": m.importance,
+                }
+                for m in recent
+            ]
+
+            # 2c. Merge — relevant first, then recent; dedupe by content
+            seen: set[str] = set()
+            for m in semantic + recent_dicts:
+                key = (m.get("content") or "").strip()[:120]
+                if key and key not in seen:
+                    seen.add(key)
+                    memories.append(m)
+            memories = memories[:12]
 
         if include_life_events:
             life_events = await self.memory_service.get_recent_events(
@@ -90,6 +118,7 @@ class ChatService:
             "message": response,
             "context_used": {
                 "memories_count": len(memories),
+                "semantic_recall_count": semantic_count,
                 "life_events_count": len(life_events),
             },
         }
