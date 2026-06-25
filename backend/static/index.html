@@ -49,6 +49,7 @@ body::before{content:'';position:fixed;inset:0;z-index:-1;background:radial-grad
 .p1{background:rgba(167,139,250,.15);color:var(--primary)}.p2{background:rgba(6,182,212,.15);color:var(--accent)}
 .p3{background:rgba(236,72,153,.15);color:var(--pink)}.p4{background:rgba(245,158,11,.15);color:var(--orange)}
 .p5{background:rgba(16,185,129,.15);color:var(--green)}.p6{background:rgba(239,68,68,.15);color:var(--red)}
+.p7{background:rgba(52,211,153,.15);color:var(--accent)}
 .p-star{background:rgba(251,191,36,.15);color:var(--star)}
 
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);padding:24px;box-shadow:0 4px 32px rgba(0,0,0,.25);transition:var(--tr)}
@@ -248,6 +249,8 @@ textarea{resize:vertical;min-height:70px}
 <button class="tab-btn" data-tab="tab-community"><span class="tab-icon">💬</span>Cộng đồng</button>
 <button class="tab-btn" data-tab="tab-trend"><span class="tab-icon">🔥</span>Xu hướng</button>
 <button class="tab-btn" data-tab="tab-inbox"><span class="tab-icon">📨</span>Social Inbox</button>
+<button class="tab-btn" data-tab="tab-auto"><span class="tab-icon">⚙️</span>Tự động</button>
+<button class="tab-btn" data-tab="tab-money"><span class="tab-icon">💰</span>Kiếm tiền</button>
 </nav>
 
 <!-- PERSONA TAB -->
@@ -429,15 +432,11 @@ VD: Cô gái 25t, Content Creator lifestyle & thời trang. Có nụ cười t�
 <div class="result" id="memResult"></div>
 </div>
 <div class="card">
-<h3>📅 AI Tạo Timeline Sự kiện <span class="help-icon" onclick="toggleHelp(this)">?</span></h3>
-<div class="help-text">AI sinh chuỗi sự kiện liên kết thành câu chuyện. VD: Tuần 1 nhận nuôi mèo → Tuần 2 mèo ốm → Tuần 3 đưa mèo đi khám → Tuần 4 mèo khỏe. Tự động lưu vào DB.</div>
-<div class="fg"><label>Persona <span class="req">*</span></label><select id="lifePersonaId"><option value="">-- Chọn persona --</option></select></div>
-<div class="frow">
-<div class="fg"><label>Khoảng thời gian</label><select id="lifeScope"><option value="1_week">1 Tuần</option><option value="1_month" selected>1 Tháng</option><option value="3_months">3 Tháng</option></select></div>
-<div class="fg"><label>Chủ đề</label><select id="lifeTheme"><option value="lifestyle">Lifestyle</option><option value="travel">Du lịch</option><option value="work">Công việc</option><option value="romance">Tình cảm</option></select></div>
-</div>
-<button class="btn btn-p btn-block" onclick="generateLifeEvents()"><span class="btn-text">📅 AI Tạo Timeline</span><span class="spinner"></span></button>
-<div class="result" id="lifeResult"></div>
+<h3>📅 Timeline cuộc đời <span class="help-icon" onclick="toggleHelp(this)">?</span></h3>
+<div class="help-text">Sự kiện cuộc đời được sinh từ tab Story ⭐ (nguồn duy nhất, tránh trùng lặp). Ở đây bạn xem lại timeline đã có của persona.</div>
+<div class="fg"><label>Persona</label><select id="timelinePersonaId" onchange="loadTimeline(this.value)"><option value="">-- Chọn persona --</option></select></div>
+<div style="text-align:right;margin-bottom:8px"><a href="#" onclick="document.querySelector('[data-tab=tab-story]').click();return false" style="color:var(--primary);font-size:.8rem">+ Tạo chuỗi sự kiện ở Story Engine →</a></div>
+<div id="timelineList"><p style="color:var(--text2);text-align:center;padding:20px">Chọn persona để xem timeline.</p></div>
 </div>
 </div>
 </section>
@@ -451,7 +450,7 @@ VD: Cô gái 25t, Content Creator lifestyle & thời trang. Có nụ cười t�
 <div class="help-text">AI lấy từ 4 nguồn: Persona + Memory + Timeline + Trend. Bạn có thể chọn sự kiện cụ thể làm nguồn cảm hứng (VD: "Mèo bị ốm" → Caption về việc đưa mèo đi khám).</div>
 <div class="fg"><label>Persona <span class="req">*</span></label><select id="contentPersonaId"><option value="">-- Chọn persona --</option></select></div>
 <div class="frow">
-<div class="fg"><label>Loại nội dung</label><select id="contentType"><option value="caption">📝 Caption</option><option value="facebook_post">📘 Facebook Post</option><option value="reel_script">🎬 Reel Script</option><option value="tiktok_script">🎵 TikTok Script</option><option value="story">📱 Story</option><option value="thread">🧵 Thread</option></select></div>
+<div class="fg"><label>Loại nội dung</label><select id="contentType"><option value="caption">📝 Caption (IG/FB)</option><option value="story">📱 Story (ngắn)</option><option value="reel_caption">🎬 Reel Caption (Reel/TikTok)</option><option value="tweet">🐦 Tweet (X)</option></select></div>
 <div class="fg"><label>Lấy cảm hứng từ</label><select id="contentSource"><option value="">🤖 AI tự chọn</option></select></div>
 </div>
 <div class="fg"><label>Gợi ý chủ đề</label><input id="contentTopic" placeholder="Để trống để AI tự chọn chủ đề phù hợp..."></div>
@@ -486,7 +485,7 @@ VD: Cô gái 25t, Content Creator lifestyle & thời trang. Có nụ cười t�
 </div></div>
 <div style="display:flex;gap:8px">
 <button class="btn btn-p" style="flex:1" onclick="publishPost()"><span class="btn-text">🚀 Đăng ngay</span><span class="spinner"></span></button>
-<button class="btn btn-s" style="flex:1">📅 Lên lịch</button>
+<button class="btn btn-s" style="flex:1" onclick="schedulePost()">📅 Lên lịch</button>
 </div>
 <div class="result" id="pubPostResult"></div>
 </div>
@@ -551,6 +550,68 @@ VD: Cô gái 25t, Content Creator lifestyle & thời trang. Có nụ cười t�
 </div>
 </div>
 </section>
+
+<!-- AUTOMATION TAB -->
+<section class="tab-content" id="tab-auto">
+<div class="sec-hdr"><span class="phase-badge p-star">⚙️ Tự động hóa</span><h2>⚙️ Tự động — Lịch đăng & Tối ưu tương tác</h2><p class="sub">Bot tự sinh nội dung định kỳ (mặc định lưu nháp để duyệt) và học từ tương tác để đề xuất nội dung hiệu quả hơn.</p></div>
+<div class="card-grid">
+<div class="card">
+<h3>🗓️ Trạng thái Scheduler <span class="help-icon" onclick="toggleHelp(this)">?</span></h3>
+<div class="help-text">Scheduler chạy job hằng ngày sinh nội dung cho mọi persona. Mặc định LƯU NHÁP để bạn duyệt. Bật "Đăng tự động" chỉ khi đã kết nối tài khoản thật.</div>
+<div id="autoStatus"><p style="color:var(--text2);text-align:center;padding:20px">Đang tải trạng thái...</p></div>
+<div style="display:flex;gap:8px;margin-top:12px">
+<button class="btn btn-s" style="flex:1" onclick="toggleScheduler()">⏯️ Bật/Tắt lịch</button>
+<button class="btn btn-s" style="flex:1" onclick="toggleAutoPublish()">📤 Bật/Tắt đăng tự động</button>
+</div>
+</div>
+<div class="card">
+<h3>▶️ Chạy ngay (sinh nội dung)</h3>
+<div class="frow">
+<div class="fg"><label>Số bài / persona</label><input type="number" id="autoPostsPerPersona" value="1" min="1" max="10"></div>
+<div class="fg"><label>Chế độ</label><select id="autoRunMode"><option value="draft">📝 Lưu nháp (an toàn)</option><option value="publish">🚀 Đăng thẳng</option></select></div>
+</div>
+<button class="btn btn-p btn-block" onclick="runJobNow()"><span class="btn-text">▶️ Sinh nội dung cho tất cả persona</span><span class="spinner"></span></button>
+<div class="result" id="autoRunResult"></div>
+</div>
+<div class="card" style="grid-column:1/-1">
+<h3>📊 Insights tương tác (vòng học)</h3>
+<div class="fg"><label>Persona</label><select id="autoInsightsPersonaId" onchange="loadInsights(this.value)"><option value="">-- Chọn persona --</option></select></div>
+<div id="autoInsights"><p style="color:var(--text2);text-align:center;padding:20px">Chọn persona để xem phân tích content mix, khung giờ, hashtag tốt nhất.</p></div>
+</div>
+</div>
+</section>
+
+<!-- MONETIZATION TAB -->
+<section class="tab-content" id="tab-money">
+<div class="sec-hdr"><span class="phase-badge p7">Giai đoạn 7</span><h2>💰 Monetization — Kiếm tiền từ persona</h2><p class="sub">AI gợi ý sản phẩm hợp ngách nhân vật, viết bài quảng bá theo giọng persona, theo dõi doanh thu affiliate.</p></div>
+<div class="card-grid">
+<div class="card">
+<h3>🤖 AI Gợi ý Sản phẩm <span class="help-icon" onclick="toggleHelp(this)">?</span></h3>
+<div class="help-text">Dựa trên ngách, sở thích, tính cách của persona, AI đề xuất các sản phẩm/affiliate phù hợp để quảng bá tự nhiên, dễ chuyển đổi.</div>
+<div class="fg"><label>Persona <span class="req">*</span></label><select id="moneyPersonaId"><option value="">-- Chọn persona --</option></select></div>
+<button class="btn btn-p btn-block" onclick="suggestProducts()"><span class="btn-text">🤖 Gợi ý sản phẩm</span><span class="spinner"></span></button>
+<div id="moneySuggestResult" style="margin-top:12px;display:flex;flex-direction:column;gap:8px"></div>
+</div>
+<div class="card">
+<h3>➕ Thêm Sản phẩm Affiliate</h3>
+<div class="fg"><label>Persona <span class="req">*</span></label><select id="moneyAddPersonaId"><option value="">-- Chọn persona --</option></select></div>
+<div class="fg"><label>Tên sản phẩm <span class="req">*</span></label><input id="prodName" placeholder="VD: Tai nghe chống ồn XYZ"></div>
+<div class="frow">
+<div class="fg"><label>Danh mục</label><input id="prodCategory" placeholder="tech / beauty / travel..."></div>
+<div class="fg"><label>Hoa hồng (%)</label><input type="number" id="prodCommission" value="10" min="0" max="100"></div>
+</div>
+<div class="fg"><label>Link affiliate <span class="req">*</span></label><input id="prodUrl" placeholder="https://..."></div>
+<button class="btn btn-p btn-block" onclick="addProduct()"><span class="btn-text">➕ Thêm sản phẩm</span><span class="spinner"></span></button>
+<div class="result" id="moneyAddResult"></div>
+</div>
+<div class="card" style="grid-column:1/-1">
+<h3>📦 Sản phẩm & Doanh thu</h3>
+<div class="fg"><label>Persona</label><select id="moneyListPersonaId" onchange="loadProducts(this.value)"><option value="">-- Chọn persona --</option></select></div>
+<div id="moneyRevenue"></div>
+<div id="moneyProductList" style="margin-top:12px;display:flex;flex-direction:column;gap:8px"></div>
+</div>
+</div>
+</section>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
@@ -583,7 +644,7 @@ function zoomImg(src,ev){if(ev){ev.stopPropagation()}if(!src)return;let o=docume
 function loading(b,l){if(l){b.classList.add('loading');b.disabled=!0}else{b.classList.remove('loading');b.disabled=!1}}
 async function api(m,p,b=null){const o={method:m,headers:{'Content-Type':'application/json'}};if(b)o.body=JSON.stringify(b);const r=await fetch(A+p,o);if(r.status===204)return null;const d=await r.json();if(!r.ok)throw new Error(d.detail||'Lỗi '+r.status);return d}
 
-async function loadPersonas(){try{personasCache=await api('GET','/personas?limit=100&is_active=true');const sels=['memPersonaId','lifePersonaId','contentPersonaId','batchPersonaId','pubPostPersonaId','cmtPersonaId','autoReplyPersonaId','trendPersonaId','storyPersonaId','inboxPersonaId','chatPersonaSelect'];sels.forEach(sid=>{const s=document.getElementById(sid);if(!s)return;s.innerHTML='<option value="">-- Chọn persona --</option>';personasCache.forEach(p=>{s.innerHTML+=`<option value="${p.id}">${p.name} (${p.age}t, ${p.occupation})</option>`})});document.getElementById('statPersonas').textContent=personasCache.length;renderPersonaList(personasCache)}catch(e){console.error(e)}}
+async function loadPersonas(){try{personasCache=await api('GET','/personas?limit=100&is_active=true');const sels=['memPersonaId','timelinePersonaId','contentPersonaId','batchPersonaId','pubPostPersonaId','cmtPersonaId','autoReplyPersonaId','trendPersonaId','storyPersonaId','inboxPersonaId','chatPersonaSelect','autoInsightsPersonaId','moneyPersonaId','moneyAddPersonaId','moneyListPersonaId'];sels.forEach(sid=>{const s=document.getElementById(sid);if(!s)return;s.innerHTML='<option value="">-- Chọn persona --</option>';personasCache.forEach(p=>{s.innerHTML+=`<option value="${p.id}">${p.name} (${p.age}t, ${p.occupation})</option>`})});document.getElementById('statPersonas').textContent=personasCache.length;renderPersonaList(personasCache)}catch(e){console.error(e)}}
 
 function renderPersonaList(ps){const el=document.getElementById('personaList');if(!ps.length){el.innerHTML='<p style="color:var(--text2);text-align:center;padding:40px">Chưa có persona. Tạo ngay! 🚀</p>';return}
 el.innerHTML=ps.map(p=>{
@@ -606,6 +667,7 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>
 document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
 document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
 b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');
+if(b.dataset.tab==='tab-auto')loadAutomation();
 updateFlow(b.dataset.tab)}));
 
 function updateFlow(tab){const steps=document.querySelectorAll('.flow-step');steps.forEach(s=>s.classList.remove('active'));const map={'tab-persona':0,'tab-story':1,'tab-memory':2,'tab-content':3,'tab-publish':4,'tab-community':5,'tab-trend':5,'tab-inbox':5};const idx=map[tab]||0;for(let i=0;i<=idx;i++)if(steps[i])steps[i].classList.add('active')}
@@ -700,7 +762,7 @@ html+=`</div>`;el.innerHTML=html}catch(e){document.getElementById('activeStory')
 // MEMORY
 async function addMemory(){const b=document.querySelector('#tab-memory .btn-p');const pid=document.getElementById('memPersonaId').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const body={memory_type:document.getElementById('memType').value,title:document.getElementById('memTitle').value||null,content:document.getElementById('memContent').value,metadata:{memory_category:document.getElementById('memCat').value,follower_name:document.getElementById('memFollower').value||null,follower_notes:document.getElementById('memFollowerNote').value||null}};const r=await api('POST',`/personas/${pid}/memories`,body);showResult('memResult',r);toast('✅ Ký ức đã lưu!')}catch(e){showResult('memResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
 
-async function generateLifeEvents(){const b=document.querySelectorAll('#tab-memory .btn-p')[1];const pid=document.getElementById('lifePersonaId').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const r=await api('POST',`/personas/${pid}/life-events/generate?count=4`);showResult('lifeResult',r.map(e=>`📅 ${new Date(e.event_date).toLocaleDateString('vi')}: ${e.title}\n   ${e.description||''}\n   😊 ${e.mood_after||'?'}`).join('\n\n'));toast(`✅ ${r.length} sự kiện!`)}catch(e){showResult('lifeResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
+async function loadTimeline(pid){const el=document.getElementById('timelineList');if(!pid){el.innerHTML='<p style="color:var(--text2);text-align:center;padding:20px">Chọn persona để xem timeline.</p>';return}el.innerHTML='<p style="color:var(--text2);text-align:center;padding:20px">⏳ Đang tải...</p>';try{const ev=await api('GET',`/personas/${pid}/life-events?limit=30`);el.innerHTML=ev.length?ev.map(e=>`<div class="trend-card"><div style="display:flex;justify-content:space-between"><span class="ttitle">${e.title}</span><span class="p-tag">${new Date(e.event_date).toLocaleDateString('vi')}</span></div><div style="font-size:.8rem;color:var(--text2);margin-top:4px">${e.description||''}</div>${e.mood_after?`<div style="font-size:.75rem;color:var(--accent);margin-top:2px">😊 ${e.mood_after}</div>`:''}</div>`).join(''):'<p style="color:var(--text2);text-align:center;padding:20px">Chưa có sự kiện. Tạo ở tab Story ⭐.</p>'}catch(e){el.innerHTML='<p style="color:var(--red)">'+e.message+'</p>'}}
 
 // CONTENT
 async function generateContent(){const b=document.querySelector('#tab-content .btn-p');const pid=document.getElementById('contentPersonaId').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const body={persona_id:pid,content_type:document.getElementById('contentType').value,topic_hint:document.getElementById('contentTopic').value,inspired_by_event_id:document.getElementById('contentSource').value||null,creativity:.8};const r=await api('POST','/content/generate',body);showResult('contentResult',`📝 ${r.content_type.toUpperCase()}:\n\n${r.caption}\n\n🏷️ ${(r.hashtags||[]).map(h=>'#'+h).join(' ')}`);toast('✅ Nội dung đã tạo!')}catch(e){showResult('contentResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
@@ -711,6 +773,8 @@ async function generateContentBatch(){const b=document.querySelectorAll('#tab-co
 async function loadContentForPublish(){const pid=document.getElementById('pubPostPersonaId').value;if(!pid)return;try{const posts=await api('GET',`/content/posts/${pid}?status=draft&limit=30`);const sel=document.getElementById('pubContentSelect');sel.innerHTML='<option value="">-- Chọn bài viết --</option>';posts.forEach(p=>{sel.innerHTML+=`<option value="${p.id}">${(p.caption||'').substring(0,80)}...</option>`})}catch(e){}}
 
 async function publishPost(){const b=document.querySelector('#tab-publish .btn-p');const pid=document.getElementById('pubPostPersonaId').value;const cid=document.getElementById('pubContentSelect').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const plats=Array.from(document.querySelectorAll('#pubPlatforms input:checked')).map(cb=>cb.value);const body={persona_id:pid,platforms:plats};if(cid)body.content_post_id=cid;const r=await api('POST','/publishing/publish',body);showResult('pubPostResult',`✅ ${r.total_success}/${r.total_success+r.total_failed} nền tảng\n\n${r.results.map(x=>(x.success?'✅':'❌')+' '+x.platform+': '+(x.success?(x.platform_post_url||'Done'):x.error_message)).join('\n')}`);toast(`🚀 Đã đăng ${r.total_success} nền tảng!`)}catch(e){showResult('pubPostResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
+
+async function schedulePost(){const cid=document.getElementById('pubContentSelect').value;if(!cid)return toast('⚠️ Chọn bài viết','err');if(!confirm('📅 Đưa bài này vào hàng chờ lên lịch (trạng thái: scheduled)?'))return;try{await api('PATCH',`/content/posts/${cid}/status?status=scheduled`);showResult('pubPostResult','📅 Đã lên lịch bài viết (status: scheduled). Bài sẽ được xử lý theo lịch.');toast('📅 Đã lên lịch!');loadContentForPublish()}catch(e){showResult('pubPostResult',e.message,1);toast('❌ '+e.message,'err')}}
 
 function renderCalendar(){const now=new Date(),y=now.getFullYear(),m=now.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0);let h=`<div style="font-weight:700;text-align:center;margin-bottom:8px">📅 Tháng ${m+1}/${y}</div><div class="calendar">`;['CN','T2','T3','T4','T5','T6','T7'].forEach(d=>h+=`<div class="cal-day-header">${d}</div>`);for(let i=0;i<first.getDay();i++)h+='<div></div>';for(let d=1;d<=last.getDate();d++){const today=d===now.getDate();h+=`<div class="cal-day${today?' today':''}">${d}</div>`}h+='</div>';document.getElementById('pubCalendar').innerHTML=h}
 
@@ -730,6 +794,36 @@ async function loadInbox(){const pid=document.getElementById('inboxPersonaId').v
 function switchChatPersona(){const s=document.getElementById('chatPersonaSelect');activeChatPersonaId=s.value;if(activeChatPersonaId){const n=s.options[s.selectedIndex].text;document.getElementById('chatMessages').innerHTML=`<div class="chat-msg bot"><div class="sndr">${n}</div>👋 Chào bạn! Mình đây.</div>`}}
 
 async function sendChat(){const i=document.getElementById('chatInput'),m=i.value.trim();if(!m||!activeChatPersonaId)return toast('⚠️ Chọn persona','err');const mel=document.getElementById('chatMessages');mel.innerHTML+=`<div class="chat-msg user"><div class="sndr">Bạn</div>${m}</div>`;i.value='';mel.scrollTop=mel.scrollHeight;mel.innerHTML+=`<div class="chat-msg bot" id="cload"><div class="sndr">...</div>Đang nghĩ...</div>`;mel.scrollTop=mel.scrollHeight;try{const r=await api('POST','/chat',{persona_id:activeChatPersonaId,message:m,include_memories:!0,include_life_events:!0});document.getElementById('cload')?.remove();mel.innerHTML+=`<div class="chat-msg bot"><div class="sndr">${r.persona_name}</div>${r.message}</div>`;mel.scrollTop=mel.scrollHeight}catch(e){document.getElementById('cload')?.remove();mel.innerHTML+=`<div class="chat-msg bot" style="color:var(--red)">${e.message}</div>`}}
+
+// AUTOMATION
+async function loadAutomation(){try{const s=await api('GET','/automation/status');renderAutoStatus(s)}catch(e){document.getElementById('autoStatus').innerHTML='<p style="color:var(--red)">'+e.message+'</p>'}}
+function renderAutoStatus(s){const next=s.jobs&&s.jobs[0]&&s.jobs[0].next_run?new Date(s.jobs[0].next_run).toLocaleString('vi'):'—';document.getElementById('autoStatus').innerHTML=`<div style="display:flex;flex-direction:column;gap:6px;font-size:.85rem">
+<div>Lịch tự động: <strong style="color:${s.running?'var(--green,#34d399)':'var(--text2)'}">${s.running?'🟢 ĐANG CHẠY':'⚪ TẮT'}</strong></div>
+<div>Chế độ đăng: <strong style="color:${s.auto_publish?'var(--accent)':'var(--text2)'}">${s.auto_publish?'🚀 Đăng tự động':'📝 Lưu nháp'}</strong></div>
+<div>Giờ chạy hằng ngày: <strong>${String(s.daily_hour_utc).padStart(2,'0')}:00</strong> · ${s.posts_per_run} bài/persona</div>
+<div>Lần chạy kế tiếp: <strong>${next}</strong></div>
+</div>`}
+async function toggleScheduler(){try{const s=await api('GET','/automation/status');const r=await api('POST','/automation/control?enable_scheduler='+(!s.running));renderAutoStatus(r);toast(r.running?'🟢 Đã bật lịch':'⚪ Đã tắt lịch')}catch(e){toast('❌ '+e.message,'err')}}
+async function toggleAutoPublish(){try{const s=await api('GET','/automation/status');const r=await api('POST','/automation/control?auto_publish='+(!s.auto_publish));renderAutoStatus(r);toast(r.auto_publish?'🚀 Bật đăng tự động':'📝 Chuyển về lưu nháp')}catch(e){toast('❌ '+e.message,'err')}}
+async function runJobNow(){const b=document.querySelector('#tab-auto .btn-p');loading(b,1);try{const n=document.getElementById('autoPostsPerPersona').value;const mode=document.getElementById('autoRunMode').value;const pub=mode==='publish';const r=await api('POST',`/automation/run?posts_per_persona=${n}&publish=${pub}`);showResult('autoRunResult',`✅ ${r.personas_processed} persona · ${r.posts_generated} bài sinh · ${r.posts_published} bài đăng (${r.publish_mode?'đăng thẳng':'lưu nháp'})\n\n`+r.details.map(d=>`• ${d.persona}: ${d.generated} bài${d.optimized?' (đã tối ưu)':''}`).join('\n'));toast(`✅ Đã sinh ${r.posts_generated} bài!`)}catch(e){showResult('autoRunResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
+async function loadInsights(pid){if(!pid){document.getElementById('autoInsights').innerHTML='<p style="color:var(--text2);text-align:center;padding:20px">Chọn persona.</p>';return}try{const r=await api('GET','/automation/insights/'+pid);const mix=Object.entries(r.recommended_mix||{}).map(([k,v])=>`<span class="p-tag">${k}: ${v}%</span>`).join(' ');const tags=(r.top_hashtags||[]).slice(0,6).map(t=>`<span class="p-tag">#${t[0]}</span>`).join(' ');document.getElementById('autoInsights').innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;font-size:.85rem">
+<div>Trạng thái học: <strong>${r.learning?'✅ Đang học từ '+r.sample_size+' bài':'⏳ Chưa đủ dữ liệu ('+r.sample_size+' bài, cần ≥5) — dùng mặc định'}</strong></div>
+<div><div style="color:var(--text2);margin-bottom:4px">📊 Content mix đề xuất:</div>${mix}</div>
+<div><div style="color:var(--text2);margin-bottom:4px">⏰ Khung giờ tốt nhất:</div>${(r.best_times||[]).map(t=>`<span class="p-tag">${t}</span>`).join(' ')}</div>
+${tags?`<div><div style="color:var(--text2);margin-bottom:4px">🏷️ Hashtag ăn tương tác:</div>${tags}</div>`:''}
+${(r.insights||[]).map(i=>`<div style="padding:8px;background:var(--surface2);border-radius:6px">💡 ${i}</div>`).join('')}
+</div>`}catch(e){document.getElementById('autoInsights').innerHTML='<p style="color:var(--red)">'+e.message+'</p>'}}
+
+// MONETIZATION
+async function suggestProducts(){const b=document.querySelector('#tab-money .btn-p');const pid=document.getElementById('moneyPersonaId').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const r=await api('POST','/monetization/suggest/'+pid);document.getElementById('moneySuggestResult').innerHTML=(r.suggestions||[]).map(s=>`<div class="trend-card" style="border-left:3px solid var(--accent)"><div style="display:flex;justify-content:space-between"><span class="ttitle">${s.name}</span><span class="p-tag">${s.category}</span></div><div style="margin-top:6px;font-size:.82rem;color:var(--text2)">${s.why||''}</div>${s.sample_pitch?`<div style="margin-top:6px;padding:8px;background:var(--surface2);border-radius:6px;font-size:.8rem">💬 ${s.sample_pitch}</div>`:''}</div>`).join('')||'<p style="color:var(--text2)">Không có gợi ý.</p>';toast(`✅ ${(r.suggestions||[]).length} gợi ý!`)}catch(e){showResult('moneySuggestResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
+async function addProduct(){const b=document.querySelectorAll('#tab-money .btn-p')[1];const pid=document.getElementById('moneyAddPersonaId').value;if(!pid)return toast('⚠️ Chọn persona','err');loading(b,1);try{const body={persona_id:pid,name:document.getElementById('prodName').value,category:document.getElementById('prodCategory').value||'general',affiliate_url:document.getElementById('prodUrl').value,commission_rate:parseFloat(document.getElementById('prodCommission').value)||0};const r=await api('POST','/monetization/products',body);showResult('moneyAddResult','✅ Đã thêm: '+r.name);toast('✅ Đã thêm sản phẩm!');if(document.getElementById('moneyListPersonaId').value===pid)loadProducts(pid)}catch(e){showResult('moneyAddResult',e.message,1);toast('❌ '+e.message,'err')}loading(b,0)}
+async function loadProducts(pid){if(!pid){document.getElementById('moneyProductList').innerHTML='';document.getElementById('moneyRevenue').innerHTML='';return}try{const rev=await api('GET','/monetization/revenue/'+pid);document.getElementById('moneyRevenue').innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:.85rem">
+<span class="p-tag followers">💰 Doanh thu: ${(rev.total_revenue||0).toLocaleString('vi')}</span>
+<span class="p-tag">🖱️ Clicks: ${rev.total_clicks||0}</span>
+<span class="p-tag">✅ Conversions: ${rev.total_conversions||0}</span>
+<span class="p-tag">📦 SP: ${rev.product_count||0}</span></div>`;
+const prods=await api('GET','/monetization/products/'+pid);document.getElementById('moneyProductList').innerHTML=prods.length?prods.map(p=>`<div class="trend-card"><div style="display:flex;justify-content:space-between"><span class="ttitle">${p.name}</span><span class="p-tag">${p.category}</span></div><div style="font-size:.78rem;color:var(--text2);margin-top:4px">HH ${p.commission_rate}% · 🖱️ ${p.total_clicks} · ✅ ${p.total_conversions} · 💰 ${(p.total_revenue||0).toLocaleString('vi')}</div><div style="margin-top:6px;display:flex;gap:6px"><button class="btn btn-s btn-sm" onclick="genPromo('${p.id}','${pid}')" style="padding:3px 8px;font-size:.7rem">✍️ Viết bài quảng bá</button></div><div id="promo-${p.id}" style="margin-top:6px"></div></div>`).join(''):'<p style="color:var(--text2);text-align:center;padding:20px">Chưa có sản phẩm.</p>'}catch(e){document.getElementById('moneyProductList').innerHTML='<p style="color:var(--red)">'+e.message+'</p>'}}
+async function genPromo(prodId,pid){const el=document.getElementById('promo-'+prodId);el.innerHTML='<span style="font-size:.78rem;color:var(--text2)">⏳ Đang viết...</span>';try{const r=await api('POST','/monetization/promo',{persona_id:pid,product_id:prodId});el.innerHTML=`<div style="padding:8px;background:var(--surface2);border-radius:6px;font-size:.8rem">${r.caption}<div style="margin-top:4px;color:var(--accent)">${(r.hashtags||[]).map(h=>'#'+h).join(' ')}</div></div>`}catch(e){el.innerHTML='<span style="color:var(--red);font-size:.78rem">'+e.message+'</span>'}}
 
 document.addEventListener('DOMContentLoaded',async()=>{await loadPersonas();renderCalendar();setInterval(loadPersonas,30000)});
 
