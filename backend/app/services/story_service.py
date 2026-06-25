@@ -92,7 +92,6 @@ class StoryService:
                 mood_before=ev.get("mood_before"),
                 mood_after=ev.get("mood_after"),
                 event_date=ev["event_date"],
-                metadata_=ev.get("metadata", {}),
             )
             self.db.add(event)
 
