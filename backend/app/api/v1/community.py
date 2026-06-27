@@ -171,6 +171,28 @@ async def list_rules(
     return await service.get_rules(persona_id)
 
 
+# ── Fetch real comments ──────────────────────────────────────────
+
+@router.post(
+    "/fetch-comments",
+    summary="🔄 Kéo comment thật từ nền tảng",
+    description="Lấy comment thật của 1 bài đã đăng (cần tài khoản đã kết nối + token thật).",
+)
+async def fetch_comments(
+    persona_id: str = Query(...),
+    platform: str = Query(..., description="instagram | facebook"),
+    platform_post_id: str = Query(..., description="ID bài đăng trên nền tảng"),
+    limit: int = Query(50, ge=1, le=200),
+    service: CommunityService = Depends(get_community_service),
+    persona_service: PersonaService = Depends(get_persona_service),
+):
+    """Kéo comment thật của một bài đăng và lưu vào hệ thống."""
+    persona = await persona_service.get(persona_id)
+    if not persona:
+        raise HTTPException(status_code=404, detail="Không tìm thấy persona")
+    return await service.fetch_comments(persona_id, platform, platform_post_id, limit)
+
+
 # ── Comments Log ─────────────────────────────────────────────────
 
 @router.get(

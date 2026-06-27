@@ -242,6 +242,90 @@ class CommunityService:
         )
         return list(result.scalars().all())
 
+    async def fetch_comments(
+        self,
+        persona_id: str,
+        platform: str,
+        platform_post_id: str,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        """
+        Fetch real comments for a published post from the platform API and store them.
+        Requires a connected account (with valid token) for that platform.
+        Degrades gracefully (returns a note) when not available.
+        """
+        from app.engine.publishing_engine import (
+            Platform,
+            PlatformCredentials,
+            PublishingEngine,
+        )
+        from app.models.social import SocialAccount
+
+        res = await self.db.execute(
+            select(SocialAccount).where(
+                SocialAccount.persona_id == persona_id,
+                SocialAccount.platform == platform,
+                SocialAccount.is_connected == True,  # noqa: E712
+            )
+        )
+        acc = res.scalar_one_or_none()
+        if not acc or not acc.access_token:
+            return {
+                "fetched": 0,
+                "comments": [],
+                "note": f"Chưa kết nối tài khoản {platform} (hoặc thiếu access token). "
+                        f"Vào tab Đăng bài → Kết nối tài khoản trước.",
+            }
+
+        try:
+            plat = Platform(platform)
+        except ValueError:
+            return {"fetched": 0, "comments": [], "note": f"Nền tảng {platform} không hỗ trợ kéo comment."}
+
+        raw = await PublishingEngine.fetch_comments(
+            plat,
+            PlatformCredentials(
+                platform=plat,
+                access_token=acc.access_token,
+                platform_user_id=acc.platform_user_id,
+            ),
+            platform_post_id,
+            limit,
+        )
+
+        stored: list[Comment] = []
+        for c in raw:
+            cid = c.get("platform_comment_id")
+            if cid:
+                dup = await self.db.execute(
+                    select(Comment).where(Comment.platform_comment_id == cid)
+                )
+                if dup.scalar_one_or_none():
+                    continue
+            comment = Comment(
+                persona_id=persona_id,
+                platform=platform,
+                platform_comment_id=cid,
+                post_url=platform_post_id,
+                author_name=c.get("author_name", "user"),
+                content=c.get("content", ""),
+            )
+            self.db.add(comment)
+            stored.append(comment)
+        await self.db.flush()
+
+        note = "" if raw else (
+            "API chưa trả về comment. Cần token thật có quyền đọc comment và bài đã đăng thật trên nền tảng."
+        )
+        return {
+            "fetched": len(stored),
+            "comments": [
+                {"author_name": x.author_name, "content": x.content}
+                for x in stored
+            ],
+            "note": note,
+        }
+
     async def get_comments(
         self,
         persona_id: str,

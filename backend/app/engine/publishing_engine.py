@@ -103,6 +103,16 @@ class BasePlatformAdapter(ABC):
     async def close(self):
         await self.client.aclose()
 
+    async def get_comments(
+        self, platform_post_id: str, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        """
+        Fetch comments for a published post.
+        Default: platform doesn't support comment fetching → empty list.
+        Instagram/Facebook override this.
+        """
+        return []
+
     def _build_hashtag_string(self, hashtags: list[str] | None) -> str:
         """Build hashtag string from list."""
         if not hashtags:
@@ -317,6 +327,30 @@ class InstagramAdapter(BasePlatformAdapter):
         except Exception:
             return False
 
+    async def get_comments(self, platform_post_id: str, limit: int = 50) -> list[dict[str, Any]]:
+        """Fetch comments on an Instagram media via Graph API."""
+        try:
+            resp = await self.client.get(
+                f"{self.BASE_URL}/{platform_post_id}/comments",
+                params={
+                    "access_token": self.credentials.access_token,
+                    "fields": "id,text,username,timestamp",
+                    "limit": limit,
+                },
+            )
+            if resp.status_code == 200:
+                return [
+                    {
+                        "platform_comment_id": c.get("id"),
+                        "author_name": c.get("username", "user"),
+                        "content": c.get("text", ""),
+                    }
+                    for c in resp.json().get("data", [])
+                ]
+        except Exception:
+            pass
+        return []
+
 
 class FacebookAdapter(BasePlatformAdapter):
     """Facebook publishing via Graph API."""
@@ -405,6 +439,30 @@ class FacebookAdapter(BasePlatformAdapter):
             return response.status_code == 200
         except Exception:
             return False
+
+    async def get_comments(self, platform_post_id: str, limit: int = 50) -> list[dict[str, Any]]:
+        """Fetch comments on a Facebook post via Graph API."""
+        try:
+            resp = await self.client.get(
+                f"{self.BASE_URL}/{platform_post_id}/comments",
+                params={
+                    "access_token": self.credentials.access_token,
+                    "fields": "id,message,from",
+                    "limit": limit,
+                },
+            )
+            if resp.status_code == 200:
+                out = []
+                for c in resp.json().get("data", []):
+                    out.append({
+                        "platform_comment_id": c.get("id"),
+                        "author_name": (c.get("from") or {}).get("name", "user"),
+                        "content": c.get("message", ""),
+                    })
+                return out
+        except Exception:
+            pass
+        return []
 
 
 class ThreadsAdapter(BasePlatformAdapter):
@@ -768,5 +826,19 @@ class PublishingEngine:
         adapter = create_adapter(platform, credentials)
         try:
             return await adapter.get_post_stats(platform_post_id)
+        finally:
+            await adapter.close()
+
+    @staticmethod
+    async def fetch_comments(
+        platform: Platform,
+        credentials: PlatformCredentials,
+        platform_post_id: str,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """Fetch comments for a published post."""
+        adapter = create_adapter(platform, credentials)
+        try:
+            return await adapter.get_comments(platform_post_id, limit)
         finally:
             await adapter.close()
