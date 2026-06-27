@@ -4,6 +4,7 @@ Content API — Phase 3: Content Engine
 Endpoints for generating and managing social media content.
 """
 
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -109,6 +110,23 @@ async def update_post_status(
 ):
     """Cập nhật trạng thái một bài đăng."""
     post = await service.update_status(post_id, status)
+    if not post:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài đăng")
+    return post
+
+
+@router.patch(
+    "/posts/{post_id}/schedule",
+    response_model=ContentPostResponse,
+    summary="📅 Lên lịch đăng bài vào ngày giờ cụ thể",
+)
+async def schedule_post(
+    post_id: str,
+    scheduled_at: datetime = Query(..., description="Thời điểm đăng (ISO 8601)"),
+    service: ContentService = Depends(get_content_service),
+):
+    """Đặt lịch đăng cho một bài vào thời điểm cụ thể."""
+    post = await service.schedule_post(post_id, scheduled_at)
     if not post:
         raise HTTPException(status_code=404, detail="Không tìm thấy bài đăng")
     return post

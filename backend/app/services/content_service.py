@@ -233,6 +233,20 @@ class ContentService:
         await self.db.refresh(post)
         return post
 
+    async def schedule_post(self, post_id: str, scheduled_at):
+        """Mark a post as scheduled at a specific datetime."""
+        result = await self.db.execute(
+            select(ContentPost).where(ContentPost.id == post_id)
+        )
+        post = result.scalar_one_or_none()
+        if not post:
+            return None
+        post.status = "scheduled"
+        post.scheduled_at = scheduled_at
+        await self.db.flush()
+        await self.db.refresh(post)
+        return post
+
     # ── Schedule ─────────────────────────────────────────────────
 
     async def create_schedule(

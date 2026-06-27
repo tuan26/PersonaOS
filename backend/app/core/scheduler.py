@@ -18,6 +18,7 @@ from typing import Any, Optional
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 from app.config import settings
 from app.core.database import async_session_factory
@@ -163,6 +164,59 @@ async def _publish_posts(db: Any, persona: Any, posts: list[Any]) -> int:
     return published
 
 
+async def publish_due_posts() -> dict[str, Any]:
+    """
+    Publish content posts whose scheduled_at is due (status='scheduled').
+    Runs on a short interval. Best-effort: posts without connected accounts
+    stay 'scheduled' (nothing to publish to).
+    """
+    from datetime import datetime
+
+    from sqlalchemy import select
+
+    from app.models.content import ContentPost
+    from app.services.publishing_service import PublishingService
+
+    published = 0
+    attempted = 0
+    now = datetime.now()  # naive local time — matches datetime-local input
+
+    async with async_session_factory() as db:
+        try:
+            res = await db.execute(
+                select(ContentPost).where(
+                    ContentPost.status == "scheduled",
+                    ContentPost.scheduled_at != None,  # noqa: E711
+                    ContentPost.scheduled_at <= now,
+                )
+            )
+            posts = list(res.scalars().all())
+            svc = PublishingService(db)
+            for p in posts:
+                attempted += 1
+                try:
+                    results = await svc.publish_post(
+                        persona_id=p.persona_id,
+                        caption=p.caption,
+                        hashtags=p.hashtags,
+                        content_post_id=p.id,
+                    )
+                    if results and any(r.success for r in results):
+                        p.status = "published"
+                        p.published_at = datetime.now(timezone.utc)
+                        published += 1
+                except Exception as e:  # noqa: BLE001
+                    logger.warning(f"publish_due_posts: {p.id} failed: {str(e)[:150]}")
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
+
+    if attempted:
+        logger.info(f"[scheduler] publish_due_posts: {published}/{attempted} published")
+    return {"attempted": attempted, "published": published}
+
+
 # ── Scheduler lifecycle ──────────────────────────────────────────
 
 def start_scheduler() -> None:
@@ -181,6 +235,13 @@ def start_scheduler() -> None:
         id="daily_content_job",
         replace_existing=True,
         misfire_grace_time=3600,
+    )
+    _scheduler.add_job(
+        publish_due_posts,
+        trigger=IntervalTrigger(minutes=5),
+        id="publish_due_posts",
+        replace_existing=True,
+        misfire_grace_time=300,
     )
     _scheduler.start()
     logger.info(
