@@ -11,9 +11,14 @@ from pydantic import BaseModel, Field
 class MemoryCreate(BaseModel):
     """Create a memory entry."""
     memory_type: str = Field(default="conversation")
+    memory_category: str = Field(default="episodic")  # long_term | episodic | social
     title: Optional[str] = None
     content: str = Field(..., min_length=1)
     importance: float = Field(default=0.5, ge=0.0, le=1.0)
+    # Social memory fields (when memory_category = "social")
+    follower_name: Optional[str] = None
+    follower_platform: Optional[str] = None
+    follower_notes: Optional[str] = None
     metadata_: dict[str, Any] = Field(default_factory=dict, alias="metadata")
     occurred_at: Optional[datetime] = None
 
@@ -23,9 +28,12 @@ class MemoryResponse(BaseModel):
     id: str
     persona_id: str
     memory_type: str
+    memory_category: str
     title: Optional[str] = None
     content: str
     importance: float
+    follower_name: Optional[str] = None
+    follower_notes: Optional[str] = None
     metadata_: dict[str, Any]
     embedding_id: Optional[str] = None
     occurred_at: datetime

@@ -30,8 +30,12 @@ class MemoryService:
         persona_id: str,
         content: str,
         memory_type: str = "conversation",
+        memory_category: str = "episodic",
         title: str | None = None,
         importance: float | None = None,
+        follower_name: str | None = None,
+        follower_platform: str | None = None,
+        follower_notes: str | None = None,
         metadata: dict[str, Any] | None = None,
         occurred_at: datetime | None = None,
     ) -> Memory:
@@ -42,9 +46,13 @@ class MemoryService:
         memory = Memory(
             persona_id=persona_id,
             memory_type=memory_type,
+            memory_category=memory_category,
             title=title,
             content=content,
             importance=importance,
+            follower_name=follower_name,
+            follower_platform=follower_platform,
+            follower_notes=follower_notes,
             metadata_=metadata or {},
             occurred_at=occurred_at or datetime.now(timezone.utc),
         )

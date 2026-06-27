@@ -53,8 +53,12 @@ async def add_memory(
         persona_id=persona_id,
         content=data.content,
         memory_type=data.memory_type,
+        memory_category=data.memory_category,
         title=data.title,
         importance=data.importance,
+        follower_name=data.follower_name,
+        follower_platform=data.follower_platform,
+        follower_notes=data.follower_notes,
         metadata=data.metadata_,
         occurred_at=data.occurred_at,
     )
