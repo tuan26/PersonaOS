@@ -53,6 +53,22 @@ class MonetizationService:
         )
         return result.scalar_one_or_none()
 
+    async def delete_product(self, product_id: str) -> bool:
+        """Delete a product and its click/conversion events."""
+        product = await self.get_product(product_id)
+        if not product:
+            return False
+        from sqlalchemy import delete as sa_delete
+        await self.db.execute(
+            sa_delete(ClickEvent).where(ClickEvent.product_id == product_id)
+        )
+        await self.db.execute(
+            sa_delete(ConversionEvent).where(ConversionEvent.product_id == product_id)
+        )
+        await self.db.delete(product)
+        await self.db.flush()
+        return True
+
     # ── Tracking ─────────────────────────────────────────────────
 
     async def record_click(

@@ -11,7 +11,7 @@ class ProductCreate(BaseModel):
     persona_id: str
     name: str
     category: str = "general"
-    affiliate_url: str
+    affiliate_url: str = ""  # optional — add the idea now, paste the link later
     platform: str = "custom"
     commission_rate: float = Field(default=0.0, ge=0, le=100)
 

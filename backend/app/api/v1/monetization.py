@@ -42,6 +42,17 @@ async def list_products(
     return await service.list_products(persona_id)
 
 
+@router.delete("/products/{product_id}", status_code=204,
+               summary="🗑️ Xóa sản phẩm")
+async def delete_product(
+    product_id: str,
+    service: MonetizationService = Depends(get_service),
+):
+    ok = await service.delete_product(product_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Không tìm thấy sản phẩm")
+
+
 # ── Tracking ─────────────────────────────────────────────────────
 
 @router.post("/products/{product_id}/click", response_model=ProductResponse,
