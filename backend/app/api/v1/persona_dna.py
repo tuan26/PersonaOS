@@ -20,6 +20,38 @@ class FetchUrlRequest(BaseModel):
     url: str
 
 
+class ScrapeRequest(BaseModel):
+    platform: str  # x | facebook | tiktok | generic
+    profile_url: str
+    username: str = ""
+    password: str = ""
+    max_posts: int = 40
+    headless: bool = False
+
+
+@router.post(
+    "/scrape",
+    summary="🤖 (LOCAL) Selenium tự đăng nhập lấy bài KOL",
+    description="CHỈ dùng local, cho tài khoản của chính bạn, tự chịu rủi ro ToS. "
+                "Mật khẩu chỉ dùng trong RAM, không lưu. Non-headless để tự giải 2FA/CAPTCHA.",
+)
+async def scrape(data: ScrapeRequest):
+    """Best-effort scrape qua Selenium (chạy trong threadpool)."""
+    import asyncio
+
+    from app.core.social_scraper import scrape_profile
+
+    return await asyncio.to_thread(
+        scrape_profile,
+        platform=data.platform,
+        profile_url=data.profile_url,
+        username=data.username,
+        password=data.password,
+        max_posts=data.max_posts,
+        headless=data.headless,
+    )
+
+
 @router.post(
     "/fetch-url",
     summary="🔗 Lấy bài công khai từ link trang cá nhân KOL",

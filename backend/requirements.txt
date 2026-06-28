@@ -37,3 +37,4 @@ apscheduler>=3.10.0     # For content scheduling (auto-post jobs)
 
 # ── Dev Tools ────────────────────────────────────────────────────
 python-dotenv>=1.0.0
+selenium  # KOL Studio: optional local scraper (Phase 1)
