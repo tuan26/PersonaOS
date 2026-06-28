@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KOL Studio — AI Clone Persona + Revenue Engine</title>
+<style>
+:root{
+  --bg:#0a0a12;--surface:#13131f;--surface2:#1c1c2b;--border:#2a2a3d;
+  --text:#e8e8f0;--text2:#9a9ab0;--accent:#a78bfa;--accent2:#f472b6;
+  --green:#34d399;--red:#f87171;--rad:16px;--rad-sm:10px;
+  --grad1:linear-gradient(135deg,#a78bfa,#f472b6);
+  --grad2:linear-gradient(135deg,#60a5fa,#a78bfa);
+  --tr:.18s ease;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,'Segoe UI',Roboto,sans-serif;line-height:1.5;padding:0 0 60px}
+a{color:var(--accent)}
+.topbar{position:sticky;top:0;z-index:20;background:rgba(10,10,18,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.15rem}
+.brand .logo{width:34px;height:34px;border-radius:10px;background:var(--grad1);display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.brand .tag{font-size:.62rem;font-weight:700;letter-spacing:.12em;color:var(--accent);text-transform:uppercase;background:var(--surface2);padding:2px 8px;border-radius:20px}
+.switch-btn{border:1px solid var(--border);background:var(--surface2);color:var(--text);padding:8px 14px;border-radius:30px;font-weight:600;font-size:.82rem;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:6px}
+.switch-btn:hover{border-color:var(--accent);color:var(--accent)}
+.wrap{max-width:1180px;margin:0 auto;padding:22px}
+.hero{padding:18px 0 8px}
+.hero h1{font-size:1.7rem;font-weight:800;display:flex;align-items:center;gap:10px}
+.hero p{color:var(--text2);margin-top:6px;max-width:760px}
+.persona-bar{display:flex;align-items:center;gap:10px;margin:18px 0;flex-wrap:wrap}
+.persona-bar label{font-size:.7rem;font-weight:700;letter-spacing:.08em;color:var(--text2);text-transform:uppercase}
+select,input,textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--rad-sm);padding:10px 12px;font-size:.9rem;font-family:inherit;outline:none;transition:var(--tr)}
+select:focus,input:focus,textarea:focus{border-color:var(--accent)}
+select{min-width:280px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239a9ab0' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:22px}
+.pchip{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad-sm);padding:12px;cursor:pointer;transition:var(--tr);position:relative}
+.pchip:hover{border-color:var(--accent)}
+.pchip.active{border-color:transparent;background:var(--grad1)}
+.pchip.active .pc-sub,.pchip.active .pc-title{color:#fff}
+.pc-num{font-size:.62rem;font-weight:700;color:var(--accent);letter-spacing:.1em}
+.pchip.active .pc-num{color:rgba(255,255,255,.8)}
+.pc-title{font-weight:700;font-size:.92rem;margin-top:3px}
+.pc-sub{font-size:.72rem;color:var(--text2);margin-top:2px}
+.pc-soon{position:absolute;top:8px;right:8px;font-size:.58rem;font-weight:700;background:var(--surface2);color:var(--text2);padding:2px 7px;border-radius:20px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);padding:20px;margin-bottom:16px}
+.card h2{font-size:1.15rem;display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.card .desc{color:var(--text2);font-size:.85rem;margin-bottom:14px}
+.btn{border:none;border-radius:var(--rad-sm);padding:11px 18px;font-weight:700;font-size:.9rem;cursor:pointer;transition:var(--tr);background:var(--grad1);color:#fff;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-sm{padding:6px 12px;font-size:.78rem}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:.72rem;font-weight:700;letter-spacing:.06em;color:var(--text2);text-transform:uppercase;margin-bottom:5px}
+textarea{width:100%;resize:vertical;min-height:160px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.hint{font-size:.76rem;color:var(--text2);margin-top:6px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120%);background:var(--surface2);border:1px solid var(--border);padding:12px 20px;border-radius:30px;font-size:.86rem;z-index:50;transition:transform .3s;max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.err{border-color:var(--red);color:#fecaca}
+.dna-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.dna-grid{grid-template-columns:1fr}.dna-input-col{order:-1}}
+.mix-bar{height:10px;border-radius:6px;background:var(--surface2);overflow:hidden;display:flex;margin-top:4px}
+.mix-seg{height:100%}
+.tag{display:inline-block;background:var(--surface2);border:1px solid var(--border);color:var(--accent);padding:3px 10px;border-radius:20px;font-size:.78rem;margin:2px 3px 2px 0}
+.metric{background:var(--surface2);border-radius:var(--rad-sm);padding:10px;text-align:center}
+.metric .v{font-size:1.15rem;font-weight:800}
+.metric .l{font-size:.66rem;color:var(--text2);margin-top:2px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-top:10px}
+.block{background:var(--surface2);border-radius:var(--rad-sm);padding:12px;margin-top:10px}
+.block h4{font-size:.78rem;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.btn.loading .spinner{display:inline-block}
+.btn.loading .btn-text{opacity:.6}
+@keyframes spin{to{transform:rotate(360deg)}}
+.soon-box{text-align:center;padding:36px;color:var(--text2)}
+.soon-box .big{font-size:2.2rem;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><span class="logo">🧬</span><span>KOL Studio</span><span class="tag">AI Clone Persona</span></div>
+  <button class="switch-btn" onclick="location.href='/app/'">↩ Về bản Classic</button>
+</div>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>🧬 Digital Twin của KOL</h1>
+    <p>AI đọc nội dung quá khứ → dựng <strong>Persona DNA</strong> (văn phong thật) → viết đúng giọng, bắt trend hợp thương hiệu, và tối ưu <strong>doanh thu affiliate</strong>. Khác biệt: <em>AI hiểu KOL hơn chính KOL.</em></p>
+  </div>
+
+  <div class="persona-bar">
+    <label>KOL / Persona</label>
+    <select id="personaSel" onchange="onPersonaChange()"><option value="">-- Chọn persona --</option></select>
+    <button class="btn-ghost btn btn-sm" onclick="loadPersonas()">🔄</button>
+  </div>
+
+  <div class="phases" id="phases"></div>
+
+  <!-- ── Phase 1: Persona DNA ── -->
+  <div class="card" id="panel-dna">
+    <h2>🧬 Persona DNA <span style="font-size:.65rem;color:var(--green);border:1px solid var(--green);padding:2px 8px;border-radius:20px">Hoạt động</span></h2>
+    <div class="desc">Dán/upload các bài đăng cũ của KOL. AI sẽ trích ra văn phong đặc trưng để các bước sau viết đúng giọng. Càng nhiều bài, DNA càng chuẩn (khuyên ≥ 20 bài).</div>
+    <div class="dna-grid">
+      <div class="dna-input-col">
+        <div class="fg">
+          <label>Bài đăng cũ (mỗi bài cách nhau bằng dòng <code>---</code>)</label>
+          <textarea id="dnaPosts" placeholder="Bài 1...&#10;---&#10;Bài 2...&#10;---&#10;Bài 3..."></textarea>
+          <div class="hint">Hoặc upload file <strong>.txt / .csv</strong>: <input type="file" id="dnaFile" accept=".txt,.csv" onchange="loadDnaFile(event)" style="font-size:.78rem;padding:4px"></div>
+          <div class="hint" id="dnaCount">0 bài</div>
+        </div>
+        <div class="row">
+          <button class="btn" id="dnaBtn" onclick="analyzeDNA()"><span class="btn-text">🧬 Phân tích DNA</span><span class="spinner"></span></button>
+          <button class="btn-ghost btn btn-sm" onclick="loadSavedDNA()">👁 Xem DNA đã lưu</button>
+        </div>
+      </div>
+      <div id="dnaResult"><div class="soon-box"><div class="big">🧬</div>Chọn persona, dán bài cũ rồi bấm <strong>Phân tích DNA</strong>.</div></div>
+    </div>
+  </div>
+
+  <!-- ── Other phases (placeholders) ── -->
+  <div class="card" id="panel-voice" style="display:none"></div>
+  <div class="card" id="panel-calendar" style="display:none"></div>
+  <div class="card" id="panel-trend" style="display:none"></div>
+  <div class="card" id="panel-revenue" style="display:none"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const A='/api/v1';
+async function api(m,p,b){const o={method:m,headers:{'Content-Type':'application/json'}};if(b)o.body=JSON.stringify(b);const r=await fetch(A+p,o);if(r.status===204)return null;const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||('HTTP '+r.status));return d}
+function toast(m,t){const e=document.getElementById('toast');e.textContent=m;e.className='toast show'+(t==='err'?' err':'');clearTimeout(window._tt);window._tt=setTimeout(()=>e.className='toast',3200)}
+function loading(b,on){if(!b)return;b.classList.toggle('loading',!!on);b.disabled=!!on}
+
+const PHASES=[
+  {id:'dna',num:'GĐ 1',title:'Persona DNA',sub:'Học văn phong từ bài cũ',live:true},
+  {id:'voice',num:'GĐ 2',title:'Viết đúng giọng',sub:'Chấm điểm % giống KOL',live:false},
+  {id:'calendar',num:'GĐ 3',title:'Lịch 30 ngày',sub:'Funnel tự xếp theo thứ',live:false},
+  {id:'trend',num:'GĐ 4',title:'Trend hợp brand',sub:'Có nên đu trend không',live:false},
+  {id:'revenue',num:'GĐ 5',title:'Revenue Planner',sub:'Đăng gì để +20% doanh thu',live:false},
+];
+function renderPhases(){document.getElementById('phases').innerHTML=PHASES.map((p,i)=>`<div class="pchip ${i===0?'active':''}" data-id="${p.id}" onclick="selectPhase('${p.id}')"><div class="pc-num">${p.num}</div><div class="pc-title">${p.title}</div><div class="pc-sub">${p.sub}</div>${p.live?'':'<span class="pc-soon">SẮP RA</span>'}</div>`).join('')}
+function selectPhase(id){document.querySelectorAll('.pchip').forEach(c=>c.classList.toggle('active',c.dataset.id===id));PHASES.forEach(p=>{const el=document.getElementById('panel-'+p.id);if(!el)return;if(p.id==='dna'){el.style.display=id==='dna'?'':'none';return}if(id===p.id){el.style.display='';el.innerHTML=soonHtml(p)}else{el.style.display='none'}})}
+function soonHtml(p){return `<h2>${p.title}</h2><div class="soon-box"><div class="big">🚧</div><strong>Sắp ra mắt</strong><p style="margin-top:6px;max-width:520px;margin-inline:auto">${p.desc||'Module này dùng Persona DNA ở Giai đoạn 1 làm nền. Hoàn tất DNA trước, sau đó mình xây tiếp module này.'}</p></div>`}
+
+let personas=[];
+async function loadPersonas(){try{personas=await api('GET','/personas/?limit=100');const cur=document.getElementById('personaSel').value;document.getElementById('personaSel').innerHTML='<option value="">-- Chọn persona --</option>'+personas.map(p=>`<option value="${p.id}" ${p.id===cur?'selected':''}>${p.name}${p.age?' ('+p.age+'t)':''}</option>`).join('')}catch(e){toast('❌ '+e.message,'err')}}
+function onPersonaChange(){const pid=document.getElementById('personaSel').value;if(pid)loadSavedDNA(true)}
+
+// ── DNA ──
+function parsePosts(text){if(!text||!text.trim())return [];let parts;if(/\n\s*-{3,}\s*\n/.test(text)){parts=text.split(/\n\s*-{3,}\s*\n/)}else{parts=text.split(/\n\s*\n/)}return parts.map(s=>s.trim()).filter(Boolean)}
+function updateCount(){const n=parsePosts(document.getElementById('dnaPosts').value).length;document.getElementById('dnaCount').textContent=n+' bài';}
+document.addEventListener('input',e=>{if(e.target.id==='dnaPosts')updateCount()});
+function loadDnaFile(ev){const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{let txt=rd.result;if(f.name.toLowerCase().endsWith('.csv')){const lines=txt.split(/\r?\n/).filter(l=>l.trim());const posts=lines.map(l=>{const cells=l.split(',');return cells.sort((a,b)=>b.length-a.length)[0].replace(/^"|"$/g,'').trim()}).filter(Boolean);txt=posts.join('\n---\n')}document.getElementById('dnaPosts').value=txt;updateCount();toast('📄 Đã nạp file')};rd.readAsText(f,'utf-8')}
+
+async function analyzeDNA(){const pid=document.getElementById('personaSel').value;if(!pid)return toast('⚠️ Chọn persona','err');const posts=parsePosts(document.getElementById('dnaPosts').value);if(!posts.length)return toast('⚠️ Dán ít nhất 1 bài','err');const b=document.getElementById('dnaBtn');loading(b,1);toast('🧬 AI đang phân tích '+posts.length+' bài...');try{const dna=await api('POST','/persona-dna/analyze',{persona_id:pid,posts});renderDNA(dna);toast('✅ Xong! Đã trích DNA từ '+dna.source_count+' bài')}catch(e){toast('❌ '+e.message,'err')}loading(b,0)}
+async function loadSavedDNA(silent){const pid=document.getElementById('personaSel').value;if(!pid){if(!silent)toast('⚠️ Chọn persona','err');return}try{const dna=await api('GET','/persona-dna/'+pid);renderDNA(dna);if(!silent)toast('👁 DNA đã lưu')}catch(e){if(!silent){document.getElementById('dnaResult').innerHTML='<div class="soon-box"><div class="big">🧬</div>'+e.message+'</div>'}}}
+
+const MIXC=['#a78bfa','#f472b6','#60a5fa','#34d399','#fbbf24','#fb7185'];
+function renderDNA(d){const mix=d.personality_mix||[];const mixBar=mix.map((m,i)=>`<div class="mix-seg" style="width:${m.percent}%;background:${MIXC[i%MIXC.length]}"></div>`).join('');const mixLeg=mix.map((m,i)=>`<span class="tag" style="border-color:${MIXC[i%MIXC.length]};color:${MIXC[i%MIXC.length]}">${m.trait} ${m.percent}%</span>`).join('');const sm=d.style_metrics||{};const metrics=[['avg_post_chars','ký tự/bài'],['avg_words_per_sentence','từ/câu'],['emoji_per_post','emoji/bài'],['hashtags_per_post','hashtag/bài'],['questions_per_post','? /bài'],['exclamations_per_post','! /bài']].map(([k,l])=>`<div class="metric"><div class="v">${sm[k]??'—'}</div><div class="l">${l}</div></div>`).join('');const st=d.post_structure||{};
+document.getElementById('dnaResult').innerHTML=`
+<div style="font-size:.7rem;color:var(--text2);text-transform:uppercase;letter-spacing:.08em">DNA từ ${d.source_count} bài</div>
+${d.voice_summary?`<div class="block" style="border-left:3px solid var(--accent)"><h4>🎙 Văn phong</h4>${d.voice_summary}</div>`:''}
+<div class="block"><h4>🎭 Tỷ lệ tính cách</h4><div class="mix-bar">${mixBar}</div><div style="margin-top:8px">${mixLeg||'—'}</div></div>
+${(d.signature_phrases||[]).length?`<div class="block"><h4>💬 Đặc ngữ hay dùng</h4>${d.signature_phrases.map(p=>`<span class="tag">${p}</span>`).join('')}</div>`:''}
+${st.pattern?`<div class="block"><h4>🧱 Cấu trúc bài</h4><strong>${st.pattern}</strong>${st.notes?`<div style="color:var(--text2);font-size:.82rem;margin-top:4px">${st.notes}</div>`:''}</div>`:''}
+${(d.topics||[]).length?`<div class="block"><h4>📚 Chủ đề</h4>${d.topics.map(t=>`<span class="tag">${t}</span>`).join('')}</div>`:''}
+${d.tone?`<div class="block"><h4>🎚 Giọng điệu</h4>${d.tone}</div>`:''}
+<div class="block"><h4>📊 Style metrics</h4><div class="metrics">${metrics}</div></div>
+${(d.dos||[]).length?`<div class="block"><h4 style="color:var(--green)">✅ Nên</h4>${d.dos.map(x=>`<div style="font-size:.84rem">• ${x}</div>`).join('')}</div>`:''}
+${(d.donts||[]).length?`<div class="block"><h4 style="color:var(--red)">⛔ Tránh</h4>${d.donts.map(x=>`<div style="font-size:.84rem">• ${x}</div>`).join('')}</div>`:''}
+`}
+
+renderPhases();
+loadPersonas();
+</script>
+</body>
+</html>

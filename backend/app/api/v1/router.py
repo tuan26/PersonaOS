@@ -18,6 +18,7 @@ from app.api.v1.trend import router as trend_router
 from app.api.v1.media import router as media_router
 from app.api.v1.automation import router as automation_router
 from app.api.v1.monetization import router as monetization_router
+from app.api.v1.persona_dna import router as persona_dna_router
 
 # ── v1 Main Router ───────────────────────────────────────────────
 v1_router = APIRouter(prefix="/api/v1")
@@ -54,6 +55,9 @@ v1_router.include_router(automation_router, tags=["Automation"])
 
 # Phase 7: Monetization Engine
 v1_router.include_router(monetization_router, tags=["Monetization"])
+
+# KOL Studio Phase 1: Persona DNA (Personal Brand Memory Engine)
+v1_router.include_router(persona_dna_router, tags=["PersonaDNA"])
 
 # ── Future phases (uncomment as implemented) ────────────────────
 # from app.api.v1.monetization import router as monetization_router
