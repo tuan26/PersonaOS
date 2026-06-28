@@ -233,6 +233,18 @@ class ContentService:
         await self.db.refresh(post)
         return post
 
+    async def delete_post(self, post_id: str) -> bool:
+        """Permanently delete a content post."""
+        result = await self.db.execute(
+            select(ContentPost).where(ContentPost.id == post_id)
+        )
+        post = result.scalar_one_or_none()
+        if not post:
+            return False
+        await self.db.delete(post)
+        await self.db.flush()
+        return True
+
     async def schedule_post(self, post_id: str, scheduled_at):
         """Mark a post as scheduled at a specific datetime."""
         result = await self.db.execute(

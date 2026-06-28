@@ -115,6 +115,21 @@ async def update_post_status(
     return post
 
 
+@router.delete(
+    "/posts/{post_id}",
+    status_code=204,
+    summary="🗑️ Xóa bài đăng",
+)
+async def delete_post(
+    post_id: str,
+    service: ContentService = Depends(get_content_service),
+):
+    """Xóa hẳn một bài đăng."""
+    ok = await service.delete_post(post_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài đăng")
+
+
 @router.patch(
     "/posts/{post_id}/schedule",
     response_model=ContentPostResponse,
