@@ -103,6 +103,14 @@ textarea{width:100%;resize:vertical;min-height:160px}
     <div class="dna-grid">
       <div class="dna-input-col">
         <div class="fg">
+          <label>🔗 Link trang cá nhân KOL (tự lấy bài)</label>
+          <div style="display:flex;gap:6px">
+            <input id="dnaUrl" placeholder="https://... (blog / Substack / Medium / website / YouTube channel)" style="flex:1">
+            <button class="btn btn-sm" id="dnaUrlBtn" onclick="fetchDnaUrl()"><span class="btn-text">Lấy bài</span><span class="spinner"></span></button>
+          </div>
+          <div class="hint">⚠️ Instagram/TikTok/Facebook/X chặn bot → hãy copy bài dán vào ô dưới. Link RSS/blog/website/YouTube channel thì lấy được.</div>
+        </div>
+        <div class="fg">
           <label>Bài đăng cũ (mỗi bài cách nhau bằng dòng <code>---</code>)</label>
           <textarea id="dnaPosts" placeholder="Bài 1...&#10;---&#10;Bài 2...&#10;---&#10;Bài 3..."></textarea>
           <div class="hint">Hoặc upload file <strong>.txt / .csv</strong>: <input type="file" id="dnaFile" accept=".txt,.csv" onchange="loadDnaFile(event)" style="font-size:.78rem;padding:4px"></div>
@@ -181,6 +189,7 @@ function updateCount(){const n=parsePosts(document.getElementById('dnaPosts').va
 document.addEventListener('input',e=>{if(e.target.id==='dnaPosts')updateCount()});
 function loadDnaFile(ev){const f=ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{let txt=rd.result;if(f.name.toLowerCase().endsWith('.csv')){const lines=txt.split(/\r?\n/).filter(l=>l.trim());const posts=lines.map(l=>{const cells=l.split(',');return cells.sort((a,b)=>b.length-a.length)[0].replace(/^"|"$/g,'').trim()}).filter(Boolean);txt=posts.join('\n---\n')}document.getElementById('dnaPosts').value=txt;updateCount();toast('📄 Đã nạp file')};rd.readAsText(f,'utf-8')}
 
+async function fetchDnaUrl(){const url=document.getElementById('dnaUrl').value.trim();if(!url)return toast('⚠️ Nhập link','err');const b=document.getElementById('dnaUrlBtn');loading(b,1);toast('🔗 Đang lấy bài từ link...');try{const r=await api('POST','/persona-dna/fetch-url',{url});if(r.posts&&r.posts.length){const ta=document.getElementById('dnaPosts');const cur=ta.value.trim();ta.value=(cur?cur+'\n---\n':'')+r.posts.join('\n---\n');updateCount();toast('✅ '+(r.note||('Lấy '+r.posts.length+' đoạn')))}else{toast('ℹ️ '+(r.note||'Không lấy được bài'),'err')}}catch(e){toast('❌ '+e.message,'err')}loading(b,0)}
 async function analyzeDNA(){const pid=document.getElementById('personaSel').value;if(!pid)return toast('⚠️ Chọn persona','err');const posts=parsePosts(document.getElementById('dnaPosts').value);if(!posts.length)return toast('⚠️ Dán ít nhất 1 bài','err');const b=document.getElementById('dnaBtn');loading(b,1);toast('🧬 AI đang phân tích '+posts.length+' bài...');try{const dna=await api('POST','/persona-dna/analyze',{persona_id:pid,posts});renderDNA(dna);toast('✅ Xong! Đã trích DNA từ '+dna.source_count+' bài')}catch(e){toast('❌ '+e.message,'err')}loading(b,0)}
 async function loadSavedDNA(silent){const pid=document.getElementById('personaSel').value;if(!pid){if(!silent)toast('⚠️ Chọn persona','err');return}try{const dna=await api('GET','/persona-dna/'+pid);renderDNA(dna);if(!silent)toast('👁 DNA đã lưu')}catch(e){if(!silent){document.getElementById('dnaResult').innerHTML='<div class="soon-box"><div class="big">🧬</div>'+e.message+'</div>'}}}
 

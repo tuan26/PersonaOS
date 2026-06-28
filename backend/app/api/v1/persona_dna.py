@@ -3,15 +3,32 @@ Persona DNA API — KOL Studio Phase 1: Personal Brand Memory Engine.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_db_session
+from app.core.web_ingest import fetch_posts_from_url
 from app.models.persona_dna import PersonaDNA  # noqa: F401 (register table)
 from app.schemas.persona_dna import DNAAnalyzeRequest, PersonaDNAResponse
 from app.services.persona_dna_service import PersonaDNAService
 from app.services.persona_service import PersonaService
 
 router = APIRouter(prefix="/persona-dna")
+
+
+class FetchUrlRequest(BaseModel):
+    url: str
+
+
+@router.post(
+    "/fetch-url",
+    summary="🔗 Lấy bài công khai từ link trang cá nhân KOL",
+    description="Tải nội dung công khai từ 1 link (RSS/blog/website/YouTube channel) "
+                "để đổ vào ô phân tích. IG/TikTok/FB/X chặn bot → dán thủ công.",
+)
+async def fetch_url(data: FetchUrlRequest):
+    """Best-effort: trả về các đoạn bài lấy được + ghi chú."""
+    return await fetch_posts_from_url(data.url)
 
 
 @router.post(
