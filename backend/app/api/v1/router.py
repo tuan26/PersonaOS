@@ -21,6 +21,7 @@ from app.api.v1.monetization import router as monetization_router
 from app.api.v1.persona_dna import router as persona_dna_router
 from app.api.v1.voice import router as voice_router
 from app.api.v1.calendar import router as calendar_router
+from app.api.v1.trend_fit import router as trend_fit_router
 
 # ── v1 Main Router ───────────────────────────────────────────────
 v1_router = APIRouter(prefix="/api/v1")
@@ -66,6 +67,9 @@ v1_router.include_router(voice_router, tags=["Voice"])
 
 # KOL Studio Phase 3: Content Calendar (30-day funnel plan)
 v1_router.include_router(calendar_router, tags=["Calendar"])
+
+# KOL Studio Phase 4: Trend-Fit (brand-safe trend matching)
+v1_router.include_router(trend_fit_router, tags=["TrendFit"])
 
 # ── Future phases (uncomment as implemented) ────────────────────
 # from app.api.v1.monetization import router as monetization_router
