@@ -501,8 +501,11 @@ class TrendEngine:
 
         if use_ai and top_trends:
             recommendations = await self._ai_recommend(persona, top_trends)
-        else:
-            # Simple template-based recommendations
+
+        # Fallback to simple template recommendations when AI is off OR
+        # when AI returned nothing (parse error, API failure, etc.) — the
+        # user should always get suggestions if any trend is relevant.
+        if not recommendations:
             for trend, relevance in top_trends:
                 rec = TrendRecommendation(
                     trend=trend,
@@ -549,7 +552,19 @@ class TrendEngine:
             )
 
             recommendations = []
-            recs = result if isinstance(result, list) else result.get("recommendations", [])
+            # OpenAI JSON mode forces a top-level object, so the LLM wraps the
+            # array under a key whose name varies (suggestions / recommendations /
+            # results / ...). Accept a top-level array, else grab the first
+            # list-valued field instead of hard-coding one key.
+            if isinstance(result, list):
+                recs = result
+            elif isinstance(result, dict):
+                recs = next(
+                    (v for v in result.values() if isinstance(v, list)),
+                    [],
+                )
+            else:
+                recs = []
 
             for i, rec in enumerate(recs):
                 if i < len(top_trends):
