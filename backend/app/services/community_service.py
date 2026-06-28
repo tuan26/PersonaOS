@@ -208,6 +208,141 @@ class CommunityService:
             "reply_content": reply,
         }
 
+    # ── Social Inbox (DMs) ───────────────────────────────────────
+
+    @staticmethod
+    def _inbox_status(msg: InboxMessage) -> str:
+        """Derive lifecycle status from flags: new -> pending -> replied."""
+        if msg.replied:
+            return "replied"
+        if msg.reply_content:
+            return "pending"  # AI drafted a reply, not sent yet
+        return "new"
+
+    def _inbox_dict(self, msg: InboxMessage) -> dict[str, Any]:
+        return {
+            "id": msg.id,
+            "persona_id": msg.persona_id,
+            "platform": msg.platform,
+            "sender_name": msg.sender_name,
+            "content": msg.content,
+            "replied": msg.replied,
+            "reply_content": msg.reply_content,
+            "status": self._inbox_status(msg),
+            "created_at": msg.created_at,
+        }
+
+    async def add_inbox_message(
+        self,
+        persona_id: str,
+        sender_name: str,
+        content: str,
+        platform: str = "instagram",
+    ) -> dict[str, Any]:
+        """Store an incoming DM (manual intake) with status 'new'."""
+        msg = InboxMessage(
+            persona_id=persona_id,
+            platform=platform,
+            sender_name=sender_name,
+            content=content,
+            replied=False,
+        )
+        self.db.add(msg)
+        await self.db.flush()
+        await self.db.refresh(msg)
+        return self._inbox_dict(msg)
+
+    async def list_inbox(
+        self,
+        persona_id: str,
+        status: str | None = None,
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        """List inbox DMs, optionally filtered by derived status."""
+        result = await self.db.execute(
+            select(InboxMessage)
+            .where(InboxMessage.persona_id == persona_id)
+            .order_by(InboxMessage.created_at.desc())
+            .limit(limit)
+        )
+        msgs = list(result.scalars().all())
+        out = [self._inbox_dict(m) for m in msgs]
+        if status and status != "all":
+            out = [m for m in out if m["status"] == status]
+        return out
+
+    async def draft_inbox_reply(self, message_id: str) -> dict[str, Any] | None:
+        """Generate an in-character reply for a DM (status -> pending)."""
+        result = await self.db.execute(
+            select(InboxMessage).where(InboxMessage.id == message_id)
+        )
+        msg = result.scalar_one_or_none()
+        if not msg:
+            return None
+
+        persona = await self.persona_service.get(msg.persona_id)
+        if not persona:
+            raise ValueError(f"Persona not found: {msg.persona_id}")
+
+        reply = await CommunityEngine.generate_inbox_reply(
+            persona=persona,
+            message_content=msg.content,
+            sender_name=msg.sender_name,
+        )
+        msg.reply_content = reply
+        msg.replied = False
+        await self.db.flush()
+        await self.db.refresh(msg)
+        return self._inbox_dict(msg)
+
+    async def mark_inbox_replied(self, message_id: str) -> dict[str, Any] | None:
+        """Mark a DM as replied (sent)."""
+        result = await self.db.execute(
+            select(InboxMessage).where(InboxMessage.id == message_id)
+        )
+        msg = result.scalar_one_or_none()
+        if not msg:
+            return None
+        msg.replied = True
+        await self.db.flush()
+        await self.db.refresh(msg)
+        return self._inbox_dict(msg)
+
+    async def fetch_inbox(
+        self,
+        persona_id: str,
+        platform: str,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        """
+        Prep for Phase B: fetch real DMs from the platform.
+        Requires a connected account with messaging permissions
+        (Instagram/Messenger DM API + app review). Degrades gracefully.
+        """
+        from app.models.social import SocialAccount
+
+        res = await self.db.execute(
+            select(SocialAccount).where(
+                SocialAccount.persona_id == persona_id,
+                SocialAccount.platform == platform,
+                SocialAccount.is_connected == True,  # noqa: E712
+            )
+        )
+        acc = res.scalar_one_or_none()
+        if not acc or not acc.access_token:
+            return {
+                "fetched": 0,
+                "messages": [],
+                "note": f"Chưa kết nối {platform} (hoặc thiếu token). "
+                        f"Vào tab Đăng bài → Kết nối tài khoản trước.",
+            }
+        return {
+            "fetched": 0,
+            "messages": [],
+            "note": "Kéo DM thật cần quyền nhắn tin (Instagram/Messenger DM API + "
+                    "app được duyệt). Tính năng sẵn sàng khi có token đủ quyền.",
+        }
+
     # ── Auto Reply Rules ─────────────────────────────────────────
 
     async def create_rule(

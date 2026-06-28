@@ -70,6 +70,29 @@ class InboxReplyResponse(BaseModel):
     reply_content: str
 
 
+class InboxMessageCreate(BaseModel):
+    """Add an incoming DM into the inbox (manual intake)."""
+    persona_id: str
+    sender_name: str = Field(..., min_length=1)
+    content: str = Field(..., min_length=1)
+    platform: str = Field(default="instagram")
+
+
+class InboxMessageResponse(BaseModel):
+    """An inbox DM with derived status (new | pending | replied)."""
+    id: str
+    persona_id: str
+    platform: str
+    sender_name: str
+    content: str
+    replied: bool
+    reply_content: Optional[str] = None
+    status: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class AutoReplyRuleCreate(BaseModel):
     """Create an auto-reply rule."""
     persona_id: str

@@ -19,6 +19,8 @@ from app.schemas.community import (
     AutoReplyRuleResponse,
     CommentAnalyzeRequest,
     CommentAnalyzeResponse,
+    InboxMessageCreate,
+    InboxMessageResponse,
     InboxReplyRequest,
     InboxReplyResponse,
 )
@@ -133,6 +135,101 @@ async def inbox_reply(
         return InboxReplyResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+# ── Social Inbox (DMs) ───────────────────────────────────────────
+
+@router.post(
+    "/inbox",
+    response_model=InboxMessageResponse,
+    status_code=201,
+    summary="➕ Thêm tin nhắn DM vào inbox",
+    description="Thêm thủ công một DM khách gửi (dán nội dung) để AI trả lời.",
+)
+async def add_inbox_message(
+    data: InboxMessageCreate,
+    service: CommunityService = Depends(get_community_service),
+    persona_service: PersonaService = Depends(get_persona_service),
+):
+    """Thêm một DM vào inbox (trạng thái new)."""
+    persona = await persona_service.get(data.persona_id)
+    if not persona:
+        raise HTTPException(status_code=404, detail="Không tìm thấy persona")
+    return await service.add_inbox_message(
+        persona_id=data.persona_id,
+        sender_name=data.sender_name,
+        content=data.content,
+        platform=data.platform,
+    )
+
+
+@router.get(
+    "/inbox/{persona_id}",
+    response_model=list[InboxMessageResponse],
+    summary="📨 Xem inbox tổng hợp",
+)
+async def list_inbox(
+    persona_id: str,
+    status: str | None = Query(None, description="new | pending | replied | all"),
+    limit: int = Query(50, ge=1, le=200),
+    service: CommunityService = Depends(get_community_service),
+):
+    """Liệt kê DM của persona, lọc theo trạng thái."""
+    return await service.list_inbox(persona_id, status=status, limit=limit)
+
+
+@router.post(
+    "/inbox/{message_id}/draft-reply",
+    response_model=InboxMessageResponse,
+    summary="🤖 AI soạn trả lời cho DM",
+)
+async def draft_inbox_reply(
+    message_id: str,
+    service: CommunityService = Depends(get_community_service),
+):
+    """AI sinh câu trả lời in-character (trạng thái -> pending)."""
+    try:
+        msg = await service.draft_inbox_reply(message_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    if not msg:
+        raise HTTPException(status_code=404, detail="Không tìm thấy tin nhắn")
+    return msg
+
+
+@router.post(
+    "/inbox/{message_id}/mark-replied",
+    response_model=InboxMessageResponse,
+    summary="✅ Đánh dấu đã gửi trả lời",
+)
+async def mark_inbox_replied(
+    message_id: str,
+    service: CommunityService = Depends(get_community_service),
+):
+    """Đánh dấu DM đã trả lời (đã gửi)."""
+    msg = await service.mark_inbox_replied(message_id)
+    if not msg:
+        raise HTTPException(status_code=404, detail="Không tìm thấy tin nhắn")
+    return msg
+
+
+@router.post(
+    "/inbox/fetch",
+    summary="🔄 Kéo DM thật từ nền tảng (chuẩn bị)",
+    description="Kéo DM thật (cần token có quyền nhắn tin + app được duyệt).",
+)
+async def fetch_inbox(
+    persona_id: str = Query(...),
+    platform: str = Query("instagram"),
+    limit: int = Query(50, ge=1, le=200),
+    service: CommunityService = Depends(get_community_service),
+    persona_service: PersonaService = Depends(get_persona_service),
+):
+    """Kéo DM thật của persona (degrade gracefully khi chưa đủ quyền)."""
+    persona = await persona_service.get(persona_id)
+    if not persona:
+        raise HTTPException(status_code=404, detail="Không tìm thấy persona")
+    return await service.fetch_inbox(persona_id, platform, limit)
 
 
 # ── Auto Reply Rules ─────────────────────────────────────────────
