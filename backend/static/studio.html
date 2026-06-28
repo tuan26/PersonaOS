@@ -140,7 +140,7 @@ const PHASES=[
   {id:'revenue',num:'GĐ 5',title:'Revenue Planner',sub:'Đăng gì để +20% doanh thu',live:false},
 ];
 function renderPhases(){document.getElementById('phases').innerHTML=PHASES.map((p,i)=>`<div class="pchip ${i===0?'active':''}" data-id="${p.id}" onclick="selectPhase('${p.id}')"><div class="pc-num">${p.num}</div><div class="pc-title">${p.title}</div><div class="pc-sub">${p.sub}</div>${p.live?'':'<span class="pc-soon">SẮP RA</span>'}</div>`).join('')}
-function selectPhase(id){document.querySelectorAll('.pchip').forEach(c=>c.classList.toggle('active',c.dataset.id===id));PHASES.forEach(p=>{const el=document.getElementById('panel-'+p.id);if(!el)return;if(p.id==='dna'){el.style.display=id==='dna'?'':'none';return}if(id===p.id){el.style.display='';if(p.id==='voice'){el.innerHTML=voicePanelHtml()}else{el.innerHTML=soonHtml(p)}}else{el.style.display='none'}})}
+function selectPhase(id){document.querySelectorAll('.pchip').forEach(c=>c.classList.toggle('active',c.dataset.id===id));PHASES.forEach(p=>{const el=document.getElementById('panel-'+p.id);if(!el)return;if(p.id==='dna'){el.style.display=id==='dna'?'':'none';return}if(id===p.id){el.style.display='';if(p.id==='voice'){el.innerHTML=voicePanelHtml()}else if(p.id==='calendar'){el.innerHTML=calendarPanelHtml();initCalendarPanel()}else{el.innerHTML=soonHtml(p)}}else{el.style.display='none'}})}
 function voicePanelHtml(){return `<h2>✍️ Viết đúng giọng KOL <span style="font-size:.65rem;color:var(--green);border:1px solid var(--green);padding:2px 8px;border-radius:20px">Hoạt động</span></h2>
 <div class="desc">Dùng Persona DNA (Giai đoạn 1) để viết bài theo chủ đề bạn nhập — đúng văn phong KOL — kèm <strong>điểm tương đồng phong cách</strong> (ước lượng). Cần phân tích DNA trước.</div>
 <div class="dna-grid">
@@ -173,7 +173,7 @@ function soonHtml(p){return `<h2>${p.title}</h2><div class="soon-box"><div class
 
 let personas=[];
 async function loadPersonas(){try{personas=await api('GET','/personas/?limit=100');const cur=document.getElementById('personaSel').value;document.getElementById('personaSel').innerHTML='<option value="">-- Chọn persona --</option>'+personas.map(p=>`<option value="${p.id}" ${p.id===cur?'selected':''}>${p.name}${p.age?' ('+p.age+'t)':''}</option>`).join('')}catch(e){toast('❌ '+e.message,'err')}}
-function onPersonaChange(){const pid=document.getElementById('personaSel').value;if(pid)loadSavedDNA(true)}
+function onPersonaChange(){const pid=document.getElementById('personaSel').value;if(!pid)return;loadSavedDNA(true);const cal=document.getElementById('panel-calendar');if(cal&&cal.style.display!=='none'&&document.getElementById('calResult'))loadCalendar(true)}
 
 // ── DNA ──
 function parsePosts(text){if(!text||!text.trim())return [];let parts;if(/\n\s*-{3,}\s*\n/.test(text)){parts=text.split(/\n\s*-{3,}\s*\n/)}else{parts=text.split(/\n\s*\n/)}return parts.map(s=>s.trim()).filter(Boolean)}
@@ -198,6 +198,42 @@ ${d.tone?`<div class="block"><h4>🎚 Giọng điệu</h4>${d.tone}</div>`:''}
 ${(d.dos||[]).length?`<div class="block"><h4 style="color:var(--green)">✅ Nên</h4>${d.dos.map(x=>`<div style="font-size:.84rem">• ${x}</div>`).join('')}</div>`:''}
 ${(d.donts||[]).length?`<div class="block"><h4 style="color:var(--red)">⛔ Tránh</h4>${d.donts.map(x=>`<div style="font-size:.84rem">• ${x}</div>`).join('')}</div>`:''}
 `}
+
+// ── Calendar (GĐ3) ──
+const PILLAR={knowledge:['📚 Kiến thức','#60a5fa'],story:['🎬 Hậu trường','#fbbf24'],sales:['🛒 Bán hàng','#f472b6']};
+function calendarPanelHtml(){return `<h2>📅 Lịch nội dung 30 ngày <span style="font-size:.65rem;color:var(--green);border:1px solid var(--green);padding:2px 8px;border-radius:20px">Hoạt động</span></h2>
+<div class="desc">AI lên lịch theo <strong>funnel</strong> (mặc định 70% kiến thức · 20% hậu trường · 10% bán hàng) — không spam, bám DNA & ngách KOL. Mỗi ngày bấm <strong>Viết bài</strong> để thành bản nháp đúng giọng.</div>
+<div class="row" style="margin-bottom:10px">
+<div class="fg" style="margin:0"><label>Số ngày</label><input type="number" id="calDays" value="30" min="7" max="60" style="width:90px"></div>
+<div class="fg" style="margin:0"><label>Bắt đầu</label><input type="date" id="calStart" style="width:160px"></div>
+<div class="fg" style="margin:0"><label>📚 %</label><input type="number" id="calK" value="70" min="0" max="100" style="width:70px"></div>
+<div class="fg" style="margin:0"><label>🎬 %</label><input type="number" id="calS" value="20" min="0" max="100" style="width:70px"></div>
+<div class="fg" style="margin:0"><label>🛒 %</label><input type="number" id="calSa" value="10" min="0" max="100" style="width:70px"></div>
+</div>
+<div class="fg"><label>Định hướng thêm (không bắt buộc)</label><input id="calHint" placeholder="VD: tập trung mảng đầu tư & AI"></div>
+<div class="row"><button class="btn" id="calBtn" onclick="generateCalendar()"><span class="btn-text">📅 Tạo lịch</span><span class="spinner"></span></button><button class="btn-ghost btn btn-sm" onclick="loadCalendar()">🔄 Tải lịch đã lưu</button></div>
+<div id="calSummary" style="margin-top:12px"></div>
+<div id="calResult" style="margin-top:10px"><div class="soon-box"><div class="big">📅</div>Đặt tỷ lệ rồi bấm <strong>Tạo lịch</strong>.</div></div>`}
+function initCalendarPanel(){const d=document.getElementById('calStart');if(d&&!d.value)d.value=new Date().toISOString().slice(0,10);loadCalendar(true)}
+async function generateCalendar(){const pid=document.getElementById('personaSel').value;if(!pid)return toast('⚠️ Chọn persona','err');const days=+document.getElementById('calDays').value||30;const k=+document.getElementById('calK').value||0,s=+document.getElementById('calS').value||0,sa=+document.getElementById('calSa').value||0;if(k+s+sa===0)return toast('⚠️ Tỷ lệ không hợp lệ','err');const b=document.getElementById('calBtn');loading(b,1);toast('📅 AI đang lên lịch '+days+' ngày...');try{const items=await api('POST','/calendar/generate',{persona_id:pid,days,start_date:document.getElementById('calStart').value||null,topics_hint:document.getElementById('calHint').value||'',knowledge_pct:k,story_pct:s,sales_pct:sa});renderCalendar(items);toast('✅ Đã tạo lịch '+items.length+' ngày!')}catch(e){toast('❌ '+e.message,'err')}loading(b,0)}
+async function loadCalendar(silent){const pid=document.getElementById('personaSel').value;if(!pid){if(!silent)toast('⚠️ Chọn persona','err');return}try{const items=await api('GET','/calendar/'+pid);if(items.length)renderCalendar(items);else if(!silent)toast('Chưa có lịch','err')}catch(e){if(!silent)toast('❌ '+e.message,'err')}}
+function renderCalendar(items){const cnt={knowledge:0,story:0,sales:0};items.forEach(it=>cnt[it.pillar]=(cnt[it.pillar]||0)+1);const tot=items.length||1;document.getElementById('calSummary').innerHTML=`<div class="row" style="gap:8px">${Object.entries(PILLAR).map(([k,[lbl,col]])=>`<span class="tag" style="border-color:${col};color:${col}">${lbl}: ${cnt[k]||0} (${Math.round((cnt[k]||0)/tot*100)}%)</span>`).join('')}</div>`;
+document.getElementById('calResult').innerHTML=items.map(it=>{const[lbl,col]=PILLAR[it.pillar]||['?','#888'];const dt=new Date(it.plan_date);const wd=['CN','T2','T3','T4','T5','T6','T7'][dt.getDay()];const done=it.status==='done',drafted=it.status==='drafted'||done;return `<div class="block" style="border-left:3px solid ${col};display:flex;gap:10px;align-items:flex-start;${done?'opacity:.6':''}">
+<div style="text-align:center;flex-shrink:0;width:48px"><div style="font-size:.7rem;color:var(--text2)">${wd}</div><div style="font-weight:800">${dt.getDate()}/${dt.getMonth()+1}</div></div>
+<div style="flex:1;min-width:0">
+<div><span class="tag" style="border-color:${col};color:${col};margin:0">${lbl}</span> ${drafted?'<span class="tag" style="border-color:var(--green);color:var(--green);margin-left:4px">'+(done?'✅ xong':'✍️ đã soạn')+'</span>':''}</div>
+<div style="font-weight:700;margin-top:4px">${it.title||'(chưa có tiêu đề)'}</div>
+<div style="font-size:.82rem;color:var(--text2)">${it.topic||''}</div>
+${it.hook?`<div style="font-size:.8rem;margin-top:3px;font-style:italic">🪝 ${it.hook}</div>`:''}
+<div id="calwrite-${it.id}"></div>
+<div class="row" style="margin-top:6px;gap:6px">
+<button class="btn btn-sm" onclick="writeCalItem('${it.id}')">✍️ ${drafted?'Viết lại':'Viết bài'}</button>
+${drafted&&!done?`<button class="btn-ghost btn btn-sm" onclick="setCalStatus('${it.id}','done')">✓ Đánh dấu xong</button>`:''}
+<button class="btn-ghost btn btn-sm" onclick="delCalItem('${it.id}')">🗑️</button>
+</div></div></div>`}).join('')}
+async function writeCalItem(id){const el=document.getElementById('calwrite-'+id);el.innerHTML='<div style="font-size:.78rem;color:var(--text2);margin-top:6px">⏳ AI đang viết đúng giọng KOL...</div>';try{const r=await api('POST','/calendar/items/'+id+'/write');const m=r.match;const pct=m?m.match_percent:null;el.innerHTML=`<div class="block" style="margin-top:8px;background:var(--bg)">${pct!=null?`<div style="font-size:.76rem;margin-bottom:4px">Giống giọng: <strong style="color:${matchColor(pct)}">${pct}%</strong></div>`:''}<div style="white-space:pre-wrap;font-size:.85rem">${r.caption}</div>${(r.hashtags||[]).length?`<div style="color:var(--accent);font-size:.82rem;margin-top:4px">${r.hashtags.map(h=>'#'+h).join(' ')}</div>`:''}<div style="font-size:.72rem;color:var(--green);margin-top:6px">✅ Đã lưu nháp (mở bản Classic → Nội dung để đăng)</div></div>`;toast('✅ Đã viết & lưu nháp');loadCalendar(true)}catch(e){el.innerHTML='<div style="color:var(--red);font-size:.78rem">'+e.message+'</div>';toast('❌ '+e.message,'err')}}
+async function setCalStatus(id,st){try{await api('PATCH','/calendar/items/'+id+'/status?status='+st);loadCalendar(true);toast('✅ Đã cập nhật')}catch(e){toast('❌ '+e.message,'err')}}
+async function delCalItem(id){if(!confirm('Xóa mục lịch này?'))return;try{await api('DELETE','/calendar/items/'+id);loadCalendar(true);toast('🗑️ Đã xóa')}catch(e){toast('❌ '+e.message,'err')}}
 
 renderPhases();
 loadPersonas();
