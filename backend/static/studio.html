@@ -134,13 +134,13 @@ function loading(b,on){if(!b)return;b.classList.toggle('loading',!!on);b.disable
 
 const PHASES=[
   {id:'dna',num:'GĐ 1',title:'Persona DNA',sub:'Học văn phong từ bài cũ',live:true},
-  {id:'voice',num:'GĐ 2',title:'Viết đúng giọng',sub:'Chấm điểm % giống KOL',live:false},
-  {id:'calendar',num:'GĐ 3',title:'Lịch 30 ngày',sub:'Funnel tự xếp theo thứ',live:false},
-  {id:'trend',num:'GĐ 4',title:'Trend hợp brand',sub:'Có nên đu trend không',live:false},
-  {id:'revenue',num:'GĐ 5',title:'Revenue Planner',sub:'Đăng gì để +20% doanh thu',live:false},
+  {id:'voice',num:'GĐ 2',title:'Viết đúng giọng',sub:'Chấm điểm % giống KOL',live:true},
+  {id:'calendar',num:'GĐ 3',title:'Lịch 30 ngày',sub:'Funnel tự xếp theo thứ',live:true},
+  {id:'trend',num:'GĐ 4',title:'Trend hợp brand',sub:'Có nên đu trend không',live:true},
+  {id:'revenue',num:'GĐ 5',title:'Revenue Planner',sub:'Đăng gì để +X% doanh thu',live:true},
 ];
 function renderPhases(){document.getElementById('phases').innerHTML=PHASES.map((p,i)=>`<div class="pchip ${i===0?'active':''}" data-id="${p.id}" onclick="selectPhase('${p.id}')"><div class="pc-num">${p.num}</div><div class="pc-title">${p.title}</div><div class="pc-sub">${p.sub}</div>${p.live?'':'<span class="pc-soon">SẮP RA</span>'}</div>`).join('')}
-function selectPhase(id){document.querySelectorAll('.pchip').forEach(c=>c.classList.toggle('active',c.dataset.id===id));PHASES.forEach(p=>{const el=document.getElementById('panel-'+p.id);if(!el)return;if(p.id==='dna'){el.style.display=id==='dna'?'':'none';return}if(id===p.id){el.style.display='';if(p.id==='voice'){el.innerHTML=voicePanelHtml()}else if(p.id==='calendar'){el.innerHTML=calendarPanelHtml();initCalendarPanel()}else if(p.id==='trend'){el.innerHTML=trendPanelHtml()}else{el.innerHTML=soonHtml(p)}}else{el.style.display='none'}})}
+function selectPhase(id){document.querySelectorAll('.pchip').forEach(c=>c.classList.toggle('active',c.dataset.id===id));PHASES.forEach(p=>{const el=document.getElementById('panel-'+p.id);if(!el)return;if(p.id==='dna'){el.style.display=id==='dna'?'':'none';return}if(id===p.id){el.style.display='';if(p.id==='voice'){el.innerHTML=voicePanelHtml()}else if(p.id==='calendar'){el.innerHTML=calendarPanelHtml();initCalendarPanel()}else if(p.id==='trend'){el.innerHTML=trendPanelHtml()}else if(p.id==='revenue'){el.innerHTML=revenuePanelHtml()}else{el.innerHTML=soonHtml(p)}}else{el.style.display='none'}})}
 function voicePanelHtml(){return `<h2>✍️ Viết đúng giọng KOL <span style="font-size:.65rem;color:var(--green);border:1px solid var(--green);padding:2px 8px;border-radius:20px">Hoạt động</span></h2>
 <div class="desc">Dùng Persona DNA (Giai đoạn 1) để viết bài theo chủ đề bạn nhập — đúng văn phong KOL — kèm <strong>điểm tương đồng phong cách</strong> (ước lượng). Cần phân tích DNA trước.</div>
 <div class="dna-grid">
@@ -261,6 +261,40 @@ let _trDrafts={};
 async function writeTrendPost(i){const it=_trItems[i];if(!it)return;const pid=document.getElementById('personaSel').value;const el=document.getElementById('trwrite-'+i);el.innerHTML='<div style="font-size:.78rem;color:var(--text2);margin-top:6px">⏳ Viết theo giọng KOL...</div>';const topic=(it.trend.title||it.trend.hashtag)+(it.angle?' — góc: '+it.angle:'');try{const r=await api('POST','/voice/generate',{persona_id:pid,topic,content_type:'post'});_trDrafts[i]={pid,caption:r.caption,hashtags:r.hashtags||[]};const m=r.match||{};const pct=m.match_percent??0;el.innerHTML=`<div class="block" style="margin-top:8px;background:var(--bg)"><div style="font-size:.76rem;margin-bottom:4px">Giống giọng: <strong style="color:${matchColor(pct)}">${pct}%</strong></div><div style="white-space:pre-wrap;font-size:.85rem">${r.caption}</div>${(r.hashtags||[]).length?`<div style="color:var(--accent);font-size:.82rem;margin-top:4px">${r.hashtags.map(h=>'#'+h).join(' ')}</div>`:''}<div class="row" style="margin-top:8px"><button class="btn btn-sm" onclick="copyTrendDraft(${i})">📋 Copy</button><button class="btn btn-sm" id="trsave-${i}" onclick="saveTrendDraftG4(${i})">📝 Lưu thành nháp</button></div></div>`;toast('✅ Đã viết')}catch(e){if(e.message&&e.message.includes('DNA')){el.innerHTML='<div style="color:var(--red);font-size:.78rem;margin-top:6px">'+e.message+' <button class="btn btn-sm" onclick="selectPhase(\'dna\')">→ GĐ1</button></div>'}else{el.innerHTML='<div style="color:var(--red);font-size:.78rem">'+e.message+'</div>'}toast('❌ '+e.message,'err')}}
 function copyTrendDraft(i){const d=_trDrafts[i];if(!d)return;navigator.clipboard.writeText(d.caption+((d.hashtags||[]).length?'\n\n'+d.hashtags.map(h=>'#'+h).join(' '):''));toast('📋 Đã copy')}
 async function saveTrendDraftG4(i){const d=_trDrafts[i];if(!d)return;const btn=document.getElementById('trsave-'+i);if(btn){btn.disabled=true;btn.textContent='⏳...'}try{await api('POST','/content/draft',{persona_id:d.pid,caption:d.caption,hashtags:d.hashtags,content_type:'caption',source:'trend-fit'});if(btn)btn.textContent='✅ Đã lưu vào Nội dung';toast('✅ Đã lưu nháp!')}catch(e){if(btn){btn.disabled=false;btn.textContent='📝 Lưu thành nháp'}toast('❌ '+e.message,'err')}}
+
+// ── Revenue Planner (GĐ5) ──
+function revenuePanelHtml(){return `<h2>💰 Revenue Planner <span style="font-size:.65rem;color:var(--green);border:1px solid var(--green);padding:2px 8px;border-radius:20px">Hoạt động</span></h2>
+<div class="desc">Trả lời câu hỏi đáng tiền nhất: <strong>"muốn +X% doanh thu affiliate → nên đăng gì?"</strong> Dùng dữ liệu doanh thu thật (tab Kiếm tiền) + DNA để lập kế hoạch nội dung hướng doanh thu, không spam.</div>
+<div class="row" style="margin-bottom:10px">
+<div class="fg" style="margin:0"><label>Mục tiêu</label><select id="rvType" style="min-width:150px"><option value="percent">Tăng theo %</option><option value="amount">Đạt mốc doanh thu (đ)</option></select></div>
+<div class="fg" style="margin:0"><label>Giá trị</label><input type="number" id="rvValue" value="20" min="0" style="width:140px"></div>
+<div class="fg" style="margin:0"><label>Khung (ngày)</label><input type="number" id="rvDays" value="30" min="7" max="90" style="width:100px"></div>
+</div>
+<div class="row"><button class="btn" id="rvBtn" onclick="runRevenuePlan()"><span class="btn-text">💰 Lập kế hoạch</span><span class="spinner"></span></button></div>
+<div id="rvResult" style="margin-top:12px"><div class="soon-box"><div class="big">💰</div>Đặt mục tiêu rồi bấm <strong>Lập kế hoạch</strong>.</div></div>`}
+function vnd(n){return (Math.round(n||0)).toLocaleString('vi')+'đ'}
+let _rvPlan=[],_rvPid=null;
+async function runRevenuePlan(){const pid=document.getElementById('personaSel').value;if(!pid)return toast('⚠️ Chọn persona','err');const b=document.getElementById('rvBtn');loading(b,1);toast('💰 AI đang lập kế hoạch doanh thu...');try{const r=await api('POST','/revenue-plan/analyze',{persona_id:pid,goal_type:document.getElementById('rvType').value,goal_value:+document.getElementById('rvValue').value||0,days:+document.getElementById('rvDays').value||30});_rvPlan=r.plan;_rvPid=pid;renderRevenuePlan(r)}catch(e){toast('❌ '+e.message,'err')}loading(b,0)}
+function renderRevenuePlan(r){const c=r.current||{},m=r.math||{};const warnDna=r.has_dna?'':'<span style="color:var(--red)">⚠️ chưa có DNA</span> ';const warnProd=r.has_products?'':'<div class="block" style="border-left:3px solid var(--red)">⚠️ Chưa có sản phẩm affiliate. Vào bản Classic → tab <strong>Kiếm tiền</strong> thêm sản phẩm để kế hoạch chính xác.</div>';
+const metrics=[['Doanh thu hiện tại',vnd(c.total_revenue)],['Mục tiêu',vnd(m.target_revenue)],['Còn thiếu',vnd(m.gap)],['Đơn cần thêm',m.est_conversions_needed!=null?m.est_conversions_needed:'—'],['Click cần',m.est_clicks_needed!=null?(m.est_clicks_needed).toLocaleString('vi'):'—'],['CR',m.conversion_rate!=null?m.conversion_rate+'%':'—']].map(([l,v])=>`<div class="metric"><div class="v" style="font-size:1rem">${v}</div><div class="l">${l}</div></div>`).join('');
+document.getElementById('rvResult').innerHTML=`${warnProd}
+<div class="metrics" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">${metrics}</div>
+${(m.assumptions||[]).length?`<div class="block"><h4>🧮 Giả định tính toán</h4>${m.assumptions.map(a=>`<div style="font-size:.82rem">• ${a}</div>`).join('')}</div>`:''}
+${r.strategy?`<div class="block" style="border-left:3px solid var(--accent)"><h4>🎯 Chiến lược ${warnDna}</h4>${r.strategy}</div>`:''}
+${(r.focus_products||[]).length?`<div class="block"><h4>⭐ Sản phẩm nên đẩy</h4>${r.focus_products.map(p=>`<div style="font-size:.84rem;margin-bottom:3px"><strong>${p.name}</strong> — <span style="color:var(--text2)">${p.why||''}</span></div>`).join('')}</div>`:''}
+${(r.warnings||[]).length?`<div class="block" style="border-left:3px solid #fbbf24"><h4>⚠️ Lưu ý</h4>${r.warnings.map(w=>`<div style="font-size:.82rem">• ${w}</div>`).join('')}</div>`:''}
+<h4 style="margin-top:14px;color:var(--text2)">📋 KẾ HOẠCH BÀI ĐĂNG (${(r.plan||[]).length})</h4>
+${(r.plan||[]).map((it,i)=>{const[lbl,col]=(PILLAR[it.pillar]||['?','#888']);return `<div class="block" style="border-left:3px solid ${col}">
+<div><span class="tag" style="border-color:${col};color:${col};margin:0">${lbl}</span>${it.product?` <span class="tag" style="border-color:var(--accent);color:var(--accent)">🛒 ${it.product}</span>`:''}${it.expected?` <span style="font-size:.72rem;color:var(--text2)">· ${it.expected}</span>`:''}</div>
+<div style="font-weight:700;margin-top:4px">${it.angle||''}</div>
+${it.hook?`<div style="font-size:.8rem;font-style:italic;margin-top:2px">🪝 ${it.hook}</div>`:''}
+<div id="rvwrite-${i}"></div>
+<div class="row" style="margin-top:6px"><button class="btn btn-sm" onclick="writeRevenueItem(${i})">✍️ Viết theo giọng</button></div>
+</div>`}).join('')}`}
+let _rvDrafts={};
+async function writeRevenueItem(i){const it=_rvPlan[i];if(!it||!_rvPid)return;const el=document.getElementById('rvwrite-'+i);el.innerHTML='<div style="font-size:.78rem;color:var(--text2);margin-top:6px">⏳ Viết theo giọng KOL...</div>';const topic=(it.angle||'')+(it.product?' (lồng ghép sản phẩm: '+it.product+')':'');try{const r=await api('POST','/voice/generate',{persona_id:_rvPid,topic,content_type:'post'});_rvDrafts[i]={caption:r.caption,hashtags:r.hashtags||[]};const m=r.match||{};const pct=m.match_percent??0;el.innerHTML=`<div class="block" style="margin-top:8px;background:var(--bg)"><div style="font-size:.76rem;margin-bottom:4px">Giống giọng: <strong style="color:${matchColor(pct)}">${pct}%</strong></div><div style="white-space:pre-wrap;font-size:.85rem">${r.caption}</div>${(r.hashtags||[]).length?`<div style="color:var(--accent);font-size:.82rem;margin-top:4px">${r.hashtags.map(h=>'#'+h).join(' ')}</div>`:''}<div class="row" style="margin-top:8px"><button class="btn btn-sm" onclick="copyRv(${i})">📋 Copy</button><button class="btn btn-sm" id="rvsave-${i}" onclick="saveRvDraft(${i})">📝 Lưu thành nháp</button></div></div>`;toast('✅ Đã viết')}catch(e){if(e.message&&e.message.includes('DNA')){el.innerHTML='<div style="color:var(--red);font-size:.78rem;margin-top:6px">'+e.message+' <button class="btn btn-sm" onclick="selectPhase(\'dna\')">→ GĐ1</button></div>'}else{el.innerHTML='<div style="color:var(--red);font-size:.78rem">'+e.message+'</div>'}toast('❌ '+e.message,'err')}}
+function copyRv(i){const d=_rvDrafts[i];if(!d)return;navigator.clipboard.writeText(d.caption+((d.hashtags||[]).length?'\n\n'+d.hashtags.map(h=>'#'+h).join(' '):''));toast('📋 Đã copy')}
+async function saveRvDraft(i){const d=_rvDrafts[i];if(!d||!_rvPid)return;const btn=document.getElementById('rvsave-'+i);if(btn){btn.disabled=true;btn.textContent='⏳...'}try{await api('POST','/content/draft',{persona_id:_rvPid,caption:d.caption,hashtags:d.hashtags,content_type:'caption',source:'revenue'});if(btn)btn.textContent='✅ Đã lưu vào Nội dung';toast('✅ Đã lưu nháp!')}catch(e){if(btn){btn.disabled=false;btn.textContent='📝 Lưu thành nháp'}toast('❌ '+e.message,'err')}}
 
 renderPhases();
 loadPersonas();
