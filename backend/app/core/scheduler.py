@@ -170,7 +170,7 @@ async def publish_due_posts() -> dict[str, Any]:
     Runs on a short interval. Best-effort: posts without connected accounts
     stay 'scheduled' (nothing to publish to).
     """
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     from sqlalchemy import select
 
@@ -263,18 +263,19 @@ def shutdown_scheduler() -> None:
 def get_scheduler_status() -> dict[str, Any]:
     """Return current scheduler state for the API/dashboard."""
     jobs = []
+    daily_next_run = None
     if _scheduler is not None:
         for job in _scheduler.get_jobs():
-            jobs.append({
-                "id": job.id,
-                "next_run": job.next_run_time.isoformat()
-                if job.next_run_time else None,
-            })
+            nxt = job.next_run_time.isoformat() if job.next_run_time else None
+            jobs.append({"id": job.id, "next_run": nxt})
+            if job.id == "daily_content_job":
+                daily_next_run = nxt
     return {
         "enabled": settings.SCHEDULER_ENABLED,
         "running": _scheduler is not None,
         "auto_publish": settings.AUTO_PUBLISH_ENABLED,
         "daily_hour_utc": settings.SCHEDULER_DAILY_HOUR,
         "posts_per_run": settings.SCHEDULER_POSTS_PER_RUN,
+        "daily_next_run": daily_next_run,
         "jobs": jobs,
     }

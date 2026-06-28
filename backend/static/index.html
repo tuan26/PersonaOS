@@ -935,11 +935,12 @@ async function sendChat(){const i=document.getElementById('chatInput'),m=i.value
 
 // AUTOMATION
 async function loadAutomation(){try{const s=await api('GET','/automation/status');renderAutoStatus(s)}catch(e){document.getElementById('autoStatus').innerHTML='<p style="color:var(--red)">'+e.message+'</p>'}}
-function renderAutoStatus(s){const next=s.jobs&&s.jobs[0]&&s.jobs[0].next_run?new Date(s.jobs[0].next_run).toLocaleString('vi'):'—';document.getElementById('autoStatus').innerHTML=`<div style="display:flex;flex-direction:column;gap:6px;font-size:.85rem">
+function renderAutoStatus(s){const d=s.daily_next_run?new Date(s.daily_next_run):null;const next=d?d.toLocaleString('vi'):'—';const hourStr=d?String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'):String(s.daily_hour_utc).padStart(2,'0')+':00';document.getElementById('autoStatus').innerHTML=`<div style="display:flex;flex-direction:column;gap:6px;font-size:.85rem">
 <div>Lịch tự động: <strong style="color:${s.running?'var(--green,#34d399)':'var(--text2)'}">${s.running?'🟢 ĐANG CHẠY':'⚪ TẮT'}</strong></div>
 <div>Chế độ đăng: <strong style="color:${s.auto_publish?'var(--accent)':'var(--text2)'}">${s.auto_publish?'🚀 Đăng tự động':'📝 Lưu nháp'}</strong></div>
-<div>Giờ chạy hằng ngày: <strong>${String(s.daily_hour_utc).padStart(2,'0')}:00</strong> · ${s.posts_per_run} bài/persona</div>
-<div>Lần chạy kế tiếp: <strong>${next}</strong></div>
+<div>Giờ sinh nội dung hằng ngày: <strong>${hourStr}</strong> (giờ máy bạn) · ${s.posts_per_run} bài/persona</div>
+<div>Lần sinh nội dung kế tiếp: <strong>${next}</strong></div>
+<div style="color:var(--text2);font-size:.78rem">↻ Bài đã lên lịch được kiểm tra & đăng mỗi 5 phút.</div>
 </div>`}
 async function toggleScheduler(){try{const s=await api('GET','/automation/status');const r=await api('POST','/automation/control?enable_scheduler='+(!s.running));renderAutoStatus(r);toast(r.running?'🟢 Đã bật lịch':'⚪ Đã tắt lịch')}catch(e){toast('❌ '+e.message,'err')}}
 async function toggleAutoPublish(){try{const s=await api('GET','/automation/status');const r=await api('POST','/automation/control?auto_publish='+(!s.auto_publish));renderAutoStatus(r);toast(r.auto_publish?'🚀 Bật đăng tự động':'📝 Chuyển về lưu nháp')}catch(e){toast('❌ '+e.message,'err')}}
