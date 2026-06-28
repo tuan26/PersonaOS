@@ -20,6 +20,15 @@ class ContentGenerateRequest(BaseModel):
     creativity: float = Field(default=0.8, ge=0.0, le=1.0)
 
 
+class ContentDraftCreate(BaseModel):
+    """Save an already-written caption (e.g. from a trend suggestion) as a draft."""
+    persona_id: str
+    caption: str
+    hashtags: list[str] = Field(default_factory=list)
+    content_type: str = Field(default="caption")
+    source: Optional[str] = None  # e.g. "trend", to record where it came from
+
+
 class ContentPostResponse(BaseModel):
     """Content post response."""
     id: str

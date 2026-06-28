@@ -118,6 +118,28 @@ class ContentService:
             await self.db.refresh(p)
         return posts
 
+    async def create_draft(
+        self,
+        persona_id: str,
+        caption: str,
+        hashtags: list[str] | None = None,
+        content_type: str = "caption",
+        source: str | None = None,
+    ) -> ContentPost:
+        """Save an already-written caption as a draft (no AI call)."""
+        post = ContentPost(
+            persona_id=persona_id,
+            content_type=content_type,
+            caption=caption,
+            hashtags=hashtags or [],
+            generation_context={"source": source} if source else {},
+            status="draft",
+        )
+        self.db.add(post)
+        await self.db.flush()
+        await self.db.refresh(post)
+        return post
+
     # ── Analytics / Feedback Loop ────────────────────────────────
 
     async def get_insights(self, persona_id: str) -> dict[str, Any]:

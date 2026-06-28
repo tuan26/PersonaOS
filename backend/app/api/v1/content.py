@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_db_session
 from app.schemas.content import (
+    ContentDraftCreate,
     ContentGenerateRequest,
     ContentPostResponse,
     ContentScheduleCreate,
@@ -79,6 +80,31 @@ async def generate_content_batch(
         raise HTTPException(status_code=404, detail="Không tìm thấy persona")
 
     return await service.generate_batch(persona, count, creativity)
+
+
+@router.post(
+    "/draft",
+    response_model=ContentPostResponse,
+    status_code=201,
+    summary="📝 Lưu caption có sẵn thành nháp",
+    description="Lưu một caption đã viết (vd từ gợi ý xu hướng) thành bài nháp, không gọi AI.",
+)
+async def create_draft(
+    data: ContentDraftCreate,
+    service: ContentService = Depends(get_content_service),
+    persona_service: PersonaService = Depends(get_persona_service),
+):
+    """Lưu caption có sẵn thành bài nháp."""
+    persona = await persona_service.get(data.persona_id)
+    if not persona:
+        raise HTTPException(status_code=404, detail="Không tìm thấy persona")
+    return await service.create_draft(
+        persona_id=data.persona_id,
+        caption=data.caption,
+        hashtags=data.hashtags,
+        content_type=data.content_type,
+        source=data.source,
+    )
 
 
 # ── Content Management ───────────────────────────────────────────
