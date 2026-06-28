@@ -140,7 +140,35 @@ const PHASES=[
   {id:'revenue',num:'GĐ 5',title:'Revenue Planner',sub:'Đăng gì để +20% doanh thu',live:false},
 ];
 function renderPhases(){document.getElementById('phases').innerHTML=PHASES.map((p,i)=>`<div class="pchip ${i===0?'active':''}" data-id="${p.id}" onclick="selectPhase('${p.id}')"><div class="pc-num">${p.num}</div><div class="pc-title">${p.title}</div><div class="pc-sub">${p.sub}</div>${p.live?'':'<span class="pc-soon">SẮP RA</span>'}</div>`).join('')}
-function selectPhase(id){document.querySelectorAll('.pchip').forEach(c=>c.classList.toggle('active',c.dataset.id===id));PHASES.forEach(p=>{const el=document.getElementById('panel-'+p.id);if(!el)return;if(p.id==='dna'){el.style.display=id==='dna'?'':'none';return}if(id===p.id){el.style.display='';el.innerHTML=soonHtml(p)}else{el.style.display='none'}})}
+function selectPhase(id){document.querySelectorAll('.pchip').forEach(c=>c.classList.toggle('active',c.dataset.id===id));PHASES.forEach(p=>{const el=document.getElementById('panel-'+p.id);if(!el)return;if(p.id==='dna'){el.style.display=id==='dna'?'':'none';return}if(id===p.id){el.style.display='';if(p.id==='voice'){el.innerHTML=voicePanelHtml()}else{el.innerHTML=soonHtml(p)}}else{el.style.display='none'}})}
+function voicePanelHtml(){return `<h2>✍️ Viết đúng giọng KOL <span style="font-size:.65rem;color:var(--green);border:1px solid var(--green);padding:2px 8px;border-radius:20px">Hoạt động</span></h2>
+<div class="desc">Dùng Persona DNA (Giai đoạn 1) để viết bài theo chủ đề bạn nhập — đúng văn phong KOL — kèm <strong>điểm tương đồng phong cách</strong> (ước lượng). Cần phân tích DNA trước.</div>
+<div class="dna-grid">
+<div class="dna-input-col">
+<div class="fg"><label>Chủ đề / yêu cầu</label><textarea id="voiceTopic" style="min-height:90px" placeholder="VD: Viết bài chia sẻ về đầu tư ETF cho người mới"></textarea></div>
+<div class="fg"><label>Loại nội dung</label><select id="voiceType"><option value="post">Post / Caption</option><option value="reel">Reel script</option><option value="story">Story ngắn</option><option value="thread">Thread dài</option></select></div>
+<div class="row"><button class="btn" id="voiceBtn" onclick="generateVoice()"><span class="btn-text">✍️ Viết như KOL</span><span class="spinner"></span></button></div>
+<div class="hint">Bấm lại để sinh bản khác.</div>
+</div>
+<div id="voiceResult"><div class="soon-box"><div class="big">✍️</div>Nhập chủ đề rồi bấm <strong>Viết như KOL</strong>.</div></div>
+</div>`}
+function matchColor(p){return p>=80?'#34d399':p>=60?'#fbbf24':'#f87171'}
+let _voiceLast=null,_voicePid=null;
+async function generateVoice(){const pid=document.getElementById('personaSel').value;if(!pid)return toast('⚠️ Chọn persona','err');const topic=document.getElementById('voiceTopic').value.trim();if(!topic)return toast('⚠️ Nhập chủ đề','err');const ctype=document.getElementById('voiceType').value;const b=document.getElementById('voiceBtn');loading(b,1);toast('✍️ AI đang viết theo giọng KOL...');try{const r=await api('POST','/voice/generate',{persona_id:pid,topic,content_type:ctype});_voiceLast=r;_voicePid=pid;renderVoice(r)}catch(e){if(e.message&&e.message.includes('DNA')){document.getElementById('voiceResult').innerHTML='<div class="soon-box"><div class="big">🧬</div>'+e.message+'<div style="margin-top:10px"><button class="btn btn-sm" onclick="selectPhase(\'dna\')">→ Sang Giai đoạn 1</button></div></div>'}toast('❌ '+e.message,'err')}loading(b,0)}
+function renderVoice(r){const m=r.match||{};const pct=m.match_percent??0;const col=matchColor(pct);const tags=(r.hashtags||[]).map(h=>'#'+h).join(' ');document.getElementById('voiceResult').innerHTML=`
+<div style="display:flex;align-items:center;gap:14px;margin-bottom:10px">
+<div style="width:72px;height:72px;border-radius:50%;border:4px solid ${col};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0"><div style="font-size:1.3rem;font-weight:800;color:${col}">${pct}%</div><div style="font-size:.55rem;color:var(--text2)">giống</div></div>
+<div style="font-size:.78rem;color:var(--text2)">Điểm tương đồng phong cách (ước lượng)<br>Ngữ nghĩa <strong style="color:var(--text)">${m.semantic??'—'}%</strong> · Style <strong style="color:var(--text)">${m.style??'—'}%</strong> · Đặc ngữ <strong style="color:var(--text)">${m.phrase??'—'}%</strong>${m.has_vector?'':' <span style="color:var(--red)">(chưa có voice vector — phân tích lại DNA)</span>'}</div>
+</div>
+<div class="block" style="white-space:pre-wrap">${r.caption||'(trống)'}</div>
+${tags?`<div style="margin-top:6px;color:var(--accent);font-size:.85rem">${tags}</div>`:''}
+${(m.used_phrases||[]).length?`<div style="margin-top:6px;font-size:.78rem;color:var(--text2)">Đặc ngữ đã dùng: ${m.used_phrases.map(p=>`<span class="tag">${p}</span>`).join('')}</div>`:''}
+<div class="row" style="margin-top:10px">
+<button class="btn btn-sm" onclick="copyVoice()">📋 Copy</button>
+<button class="btn btn-sm" id="voiceSaveBtn" onclick="saveVoiceDraft()">📝 Lưu thành nháp</button>
+</div>`}
+function copyVoice(){if(!_voiceLast)return;const t=_voiceLast.caption+((_voiceLast.hashtags||[]).length?'\n\n'+_voiceLast.hashtags.map(h=>'#'+h).join(' '):'');navigator.clipboard.writeText(t);toast('📋 Đã copy')}
+async function saveVoiceDraft(){if(!_voiceLast||!_voicePid)return;const btn=document.getElementById('voiceSaveBtn');if(btn){btn.disabled=true;btn.textContent='⏳...'}try{await api('POST','/content/draft',{persona_id:_voicePid,caption:_voiceLast.caption,hashtags:_voiceLast.hashtags||[],content_type:'caption',source:'voice'});if(btn){btn.textContent='✅ Đã lưu vào Nội dung'}toast('✅ Đã lưu nháp! Mở bản Classic → tab Nội dung để đăng.')}catch(e){if(btn){btn.disabled=false;btn.textContent='📝 Lưu thành nháp'}toast('❌ '+e.message,'err')}}
 function soonHtml(p){return `<h2>${p.title}</h2><div class="soon-box"><div class="big">🚧</div><strong>Sắp ra mắt</strong><p style="margin-top:6px;max-width:520px;margin-inline:auto">${p.desc||'Module này dùng Persona DNA ở Giai đoạn 1 làm nền. Hoàn tất DNA trước, sau đó mình xây tiếp module này.'}</p></div>`}
 
 let personas=[];

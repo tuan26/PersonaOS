@@ -53,6 +53,10 @@ class PersonaDNA(Base):
     # {"avg_post_chars": ..., "avg_words_per_sentence": ..., "emoji_per_post": ...}
     sample_excerpts: Mapped[list[str]] = mapped_column(JSON, default=list)
 
+    # ── Voice fingerprint (centroid embedding of the corpus) ─────
+    voice_vector: Mapped[list[float]] = mapped_column(JSON, default=list)
+    # average embedding of sampled posts — used to score "giống X%"
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

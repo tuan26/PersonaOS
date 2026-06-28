@@ -140,4 +140,23 @@ Trích DNA văn phong. Trả về JSON đúng cấu trúc:
         result["style_metrics"] = metrics
         result["sample_excerpts"] = clean[:3]
         result["source_count"] = len(clean)
+        result["voice_vector"] = await _voice_centroid(sample)
         return result
+
+
+async def _voice_centroid(posts: list[str]) -> list[float]:
+    """Average embedding of the sampled posts — the persona's voice fingerprint."""
+    from app.core.vector_store import _embed
+
+    if not posts:
+        return []
+    embs = await _embed(posts)
+    if not embs:
+        return []
+    dim = len(embs[0])
+    centroid = [0.0] * dim
+    for e in embs:
+        for i in range(dim):
+            centroid[i] += e[i]
+    n = len(embs)
+    return [c / n for c in centroid]

@@ -50,6 +50,7 @@ class PersonaDNAService:
         dna.donts = data.get("donts", [])
         dna.style_metrics = data.get("style_metrics", {})
         dna.sample_excerpts = data.get("sample_excerpts", [])
+        dna.voice_vector = data.get("voice_vector", [])
 
         await self.db.flush()
         await self.db.refresh(dna)
